@@ -1,0 +1,886 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/responsive_layout.dart';
+
+enum TxSortOption { dateDesc, dateAsc, montantDesc, montantAsc }
+enum TxFilterFarm { toutes, kone, alhadji, boyrue, sadou, hamidou }
+
+class AdminTransaction {
+  final String ref;
+  final String farmName;
+  final String clientName;
+  final String product;
+  final double total;
+  final double commission;
+  final String date;
+  final DateTime dateTime;
+  final bool isDelivery;
+
+  const AdminTransaction({
+    required this.ref,
+    required this.farmName,
+    required this.clientName,
+    required this.product,
+    required this.total,
+    required this.commission,
+    required this.date,
+    required this.dateTime,
+    required this.isDelivery,
+  });
+}
+
+final _allTransactions = [
+  AdminTransaction(ref: 'WC-1043', farmName: 'Ferme Koné',
+      clientName: 'Amadou Diallo', product: 'Poulet fermier 2kg × 2',
+      total: 7000, commission: 140, date: '10 mai 2026',
+      dateTime: DateTime(2026, 5, 10), isDelivery: true),
+  AdminTransaction(ref: 'WC-1042', farmName: 'Ferme Bougué',
+      clientName: 'Fatoumata Bah', product: 'Gros poulet 2.5kg × 1',
+      total: 4200, commission: 84, date: '9 mai 2026',
+      dateTime: DateTime(2026, 5, 9), isDelivery: false),
+  AdminTransaction(ref: 'WC-1041', farmName: 'Ferme Alhadji',
+      clientName: 'Ibrahim Sow', product: 'Poulet local 1.8kg × 1',
+      total: 2800, commission: 56, date: '8 mai 2026',
+      dateTime: DateTime(2026, 5, 8), isDelivery: true),
+  AdminTransaction(ref: 'WC-1040', farmName: 'Ferme Koné',
+      clientName: 'Mariama Koné', product: 'Poulet fermier 2kg × 3',
+      total: 10500, commission: 210, date: '7 mai 2026',
+      dateTime: DateTime(2026, 5, 7), isDelivery: false),
+  AdminTransaction(ref: 'WC-1039', farmName: 'Ferme Bougué',
+      clientName: 'Ousmane Traoré', product: 'Poulet bio 2.2kg × 2',
+      total: 9000, commission: 180, date: '6 mai 2026',
+      dateTime: DateTime(2026, 5, 6), isDelivery: true),
+  AdminTransaction(ref: 'WC-1038', farmName: 'Ferme Sadou',
+      clientName: 'Aminata Diallo', product: 'Poulet label rouge × 1',
+      total: 3900, commission: 78, date: '5 mai 2026',
+      dateTime: DateTime(2026, 5, 5), isDelivery: true),
+  AdminTransaction(ref: 'WC-1037', farmName: 'Ferme Koné',
+      clientName: 'Moussa Barry', product: 'Poulet fermier 2kg × 1',
+      total: 3500, commission: 70, date: '4 mai 2026',
+      dateTime: DateTime(2026, 5, 4), isDelivery: false),
+  AdminTransaction(ref: 'WC-1036', farmName: 'Ferme Alhadji',
+      clientName: 'Kadiatou Bah', product: 'Gros poulet 2.5kg × 2',
+      total: 8400, commission: 168, date: '3 mai 2026',
+      dateTime: DateTime(2026, 5, 3), isDelivery: true),
+  AdminTransaction(ref: 'WC-1035', farmName: 'Ferme Bougué',
+      clientName: 'Ibrahima Sow', product: 'Poulet standard 1.5kg × 4',
+      total: 8800, commission: 176, date: '2 mai 2026',
+      dateTime: DateTime(2026, 5, 2), isDelivery: false),
+  AdminTransaction(ref: 'WC-1034', farmName: 'Ferme Koné',
+      clientName: 'Aissatou Diallo', product: 'Poulet fermier 2kg × 2',
+      total: 7000, commission: 140, date: '1 mai 2026',
+      dateTime: DateTime(2026, 5, 1), isDelivery: true),
+];
+
+class AdminTransactionsScreen extends StatefulWidget {
+  const AdminTransactionsScreen({super.key});
+
+  @override
+  State<AdminTransactionsScreen> createState() =>
+      _AdminTransactionsScreenState();
+}
+
+class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
+  // ── Filtres ───────────────────────────────────────────────────
+  String _searchQuery = '';
+  String _selectedFarm = 'Toutes';
+  TxSortOption _sortOption = TxSortOption.dateDesc;
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
+  bool _onlyDelivery = false;
+
+  final _farms = ['Toutes', 'Ferme Koné', 'Ferme Alhadji',
+      'Ferme Bougué', 'Ferme Sadou', 'Ferme Hamidou'];
+
+  // ── Données filtrées ──────────────────────────────────────────
+  List<AdminTransaction> get _filtered {
+    var list = _allTransactions.where((tx) {
+      if (_searchQuery.isNotEmpty) {
+        final q = _searchQuery.toLowerCase();
+        if (!tx.ref.toLowerCase().contains(q) &&
+            !tx.clientName.toLowerCase().contains(q) &&
+            !tx.farmName.toLowerCase().contains(q)) return false;
+      }
+      if (_selectedFarm != 'Toutes' && tx.farmName != _selectedFarm) {
+        return false;
+      }
+      if (_dateFrom != null &&
+          tx.dateTime.isBefore(_dateFrom!)) return false;
+      if (_dateTo != null &&
+          tx.dateTime.isAfter(_dateTo!.add(const Duration(days: 1)))) {
+        return false;
+      }
+      if (_onlyDelivery && !tx.isDelivery) return false;
+      return true;
+    }).toList();
+
+    switch (_sortOption) {
+      case TxSortOption.dateDesc:
+        list.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+        break;
+      case TxSortOption.dateAsc:
+        list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+        break;
+      case TxSortOption.montantDesc:
+        list.sort((a, b) => b.total.compareTo(a.total));
+        break;
+      case TxSortOption.montantAsc:
+        list.sort((a, b) => a.total.compareTo(b.total));
+        break;
+    }
+    return list;
+  }
+
+  double get _totalFiltered =>
+      _filtered.fold(0, (sum, tx) => sum + tx.total);
+  double get _commissionFiltered =>
+      _filtered.fold(0, (sum, tx) => sum + tx.commission);
+
+  bool get _hasFilters =>
+      _selectedFarm != 'Toutes' ||
+      _dateFrom != null ||
+      _dateTo != null ||
+      _onlyDelivery ||
+      _searchQuery.isNotEmpty;
+
+  String _formatPrice(double p) =>
+      '${p.toStringAsFixed(0).replaceAllMapped(
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+            (m) => '${m[1]} ',
+          )} FCFA';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Toutes les transactions'),
+        backgroundColor: AppColors.adminColor,
+        actions: [
+          // Bouton filtre mobile
+          IconButton(
+            icon: Icon(
+              _hasFilters
+                  ? Icons.filter_alt
+                  : Icons.filter_alt_outlined,
+            ),
+            onPressed: () => _showFiltersSheet(context),
+          ),
+        ],
+      ),
+      body: ResponsiveLayout(
+        desktop: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Panneau filtres fixe
+            Container(
+              width: 260,
+              color: Colors.white,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: _FiltersPanel(
+                  farms: _farms,
+                  selectedFarm: _selectedFarm,
+                  sortOption: _sortOption,
+                  dateFrom: _dateFrom,
+                  dateTo: _dateTo,
+                  onlyDelivery: _onlyDelivery,
+                  hasFilters: _hasFilters,
+                  onFarmChanged: (v) => setState(() => _selectedFarm = v),
+                  onSortChanged: (v) => setState(() => _sortOption = v),
+                  onDateFromChanged: (v) => setState(() => _dateFrom = v),
+                  onDateToChanged: (v) => setState(() => _dateTo = v),
+                  onDeliveryChanged: (v) => setState(() => _onlyDelivery = v),
+                  onReset: _resetFilters,
+                ),
+              ),
+            ),
+            Container(width: 1, color: AppColors.divider),
+            Expanded(
+              child: Column(children: [
+                _buildSearchBar(),
+                _buildSummaryBar(),
+                Expanded(child: _buildList()),
+              ]),
+            ),
+          ],
+        ),
+        mobile: Column(children: [
+          _buildSearchBar(),
+          if (_hasFilters) _buildActiveChips(),
+          _buildSummaryBar(),
+          Expanded(child: _buildList()),
+        ]),
+      ),
+    );
+  }
+
+  // ─── Barre de recherche ────────────────────────────────────────
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Row(children: [
+        Expanded(
+          child: TextField(
+            onChanged: (v) => setState(() => _searchQuery = v),
+            decoration: const InputDecoration(
+              hintText: 'Rechercher par ref, client, ferme...',
+              hintStyle: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  color: AppColors.textSecondary),
+              prefixIcon:
+                  Icon(Icons.search, color: AppColors.primary, size: 20),
+              contentPadding: EdgeInsets.symmetric(vertical: 10),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        // Tri rapide
+        PopupMenuButton<TxSortOption>(
+          onSelected: (v) => setState(() => _sortOption = v),
+          initialValue: _sortOption,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: AppColors.divider),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(children: [
+              const Icon(Icons.swap_vert,
+                  color: AppColors.primary, size: 18),
+              const SizedBox(width: 4),
+              Text(_sortLabel(_sortOption),
+                  style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      color: AppColors.textPrimary)),
+            ]),
+          ),
+          itemBuilder: (_) => [
+            _sortItem(TxSortOption.dateDesc, 'Date ↓ (récent)'),
+            _sortItem(TxSortOption.dateAsc, 'Date ↑ (ancien)'),
+            _sortItem(TxSortOption.montantDesc, 'Montant ↓'),
+            _sortItem(TxSortOption.montantAsc, 'Montant ↑'),
+          ],
+        ),
+      ]),
+    );
+  }
+
+  // ─── Chips filtres actifs (mobile) ────────────────────────────
+  Widget _buildActiveChips() {
+    return SizedBox(
+      height: 38,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        children: [
+          if (_selectedFarm != 'Toutes')
+            _Chip(
+                label: _selectedFarm,
+                onRemove: () =>
+                    setState(() => _selectedFarm = 'Toutes')),
+          if (_dateFrom != null)
+            _Chip(
+                label:
+                    'Depuis ${_dateFrom!.day}/${_dateFrom!.month}',
+                onRemove: () => setState(() => _dateFrom = null)),
+          if (_dateTo != null)
+            _Chip(
+                label:
+                    'Jusqu\'au ${_dateTo!.day}/${_dateTo!.month}',
+                onRemove: () => setState(() => _dateTo = null)),
+          if (_onlyDelivery)
+            _Chip(
+                label: 'Livraison seulement',
+                onRemove: () =>
+                    setState(() => _onlyDelivery = false)),
+          TextButton(
+            onPressed: _resetFilters,
+            child: const Text('Tout effacer',
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Barre de résumé ──────────────────────────────────────────
+  Widget _buildSummaryBar() {
+    final filtered = _filtered;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.adminColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(children: [
+        _SummaryItem(
+            label: '${filtered.length} transactions',
+            value: '',
+            icon: Icons.receipt_long_outlined),
+        const Spacer(),
+        _SummaryItem(
+            label: 'Volume',
+            value: _formatPrice(_totalFiltered),
+            icon: Icons.swap_horiz_outlined),
+        const SizedBox(width: 16),
+        _SummaryItem(
+            label: 'Commissions',
+            value: _formatPrice(_commissionFiltered),
+            icon: Icons.account_balance_wallet_outlined),
+      ]),
+    );
+  }
+
+  // ─── Liste des transactions ────────────────────────────────────
+  Widget _buildList() {
+    final list = _filtered;
+    if (list.isEmpty) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.search_off,
+              size: 56, color: AppColors.textSecondary),
+          const SizedBox(height: 12),
+          const Text('Aucune transaction trouvée',
+              style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 15,
+                  color: AppColors.textSecondary)),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: _resetFilters,
+            child: const Text('Réinitialiser les filtres',
+                style: TextStyle(
+                    fontFamily: 'Poppins', color: AppColors.primary)),
+          ),
+        ]),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: list.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, i) => _TxCard(tx: list[i], formatPrice: _formatPrice),
+    );
+  }
+
+  // ─── Bottom sheet filtres (mobile) ────────────────────────────
+  void _showFiltersSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (_, ctrl) => SingleChildScrollView(
+          controller: ctrl,
+          padding: const EdgeInsets.all(20),
+          child: Column(children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(children: [
+              Text('Filtres',
+                  style: Theme.of(context).textTheme.headlineMedium),
+              const Spacer(),
+              if (_hasFilters)
+                TextButton(
+                  onPressed: () {
+                    _resetFilters();
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Réinitialiser',
+                      style: TextStyle(
+                          fontFamily: 'Poppins',
+                          color: AppColors.primary)),
+                ),
+            ]),
+            const SizedBox(height: 8),
+            _FiltersPanel(
+              farms: _farms,
+              selectedFarm: _selectedFarm,
+              sortOption: _sortOption,
+              dateFrom: _dateFrom,
+              dateTo: _dateTo,
+              onlyDelivery: _onlyDelivery,
+              hasFilters: _hasFilters,
+              onFarmChanged: (v) => setState(() => _selectedFarm = v),
+              onSortChanged: (v) => setState(() => _sortOption = v),
+              onDateFromChanged: (v) => setState(() => _dateFrom = v),
+              onDateToChanged: (v) => setState(() => _dateTo = v),
+              onDeliveryChanged: (v) => setState(() => _onlyDelivery = v),
+              onReset: _resetFilters,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Appliquer',
+                    style: TextStyle(fontFamily: 'Poppins')),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  void _resetFilters() => setState(() {
+        _searchQuery = '';
+        _selectedFarm = 'Toutes';
+        _sortOption = TxSortOption.dateDesc;
+        _dateFrom = null;
+        _dateTo = null;
+        _onlyDelivery = false;
+      });
+
+  PopupMenuItem<TxSortOption> _sortItem(TxSortOption opt, String label) =>
+      PopupMenuItem(
+        value: opt,
+        child: Text(label,
+            style: const TextStyle(fontFamily: 'Poppins', fontSize: 13)),
+      );
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Panneau filtres partagé
+// ─────────────────────────────────────────────────────────────────
+class _FiltersPanel extends StatelessWidget {
+  final List<String> farms;
+  final String selectedFarm;
+  final TxSortOption sortOption;
+  final DateTime? dateFrom;
+  final DateTime? dateTo;
+  final bool onlyDelivery;
+  final bool hasFilters;
+  final ValueChanged<String> onFarmChanged;
+  final ValueChanged<TxSortOption> onSortChanged;
+  final ValueChanged<DateTime?> onDateFromChanged;
+  final ValueChanged<DateTime?> onDateToChanged;
+  final ValueChanged<bool> onDeliveryChanged;
+  final VoidCallback onReset;
+
+  const _FiltersPanel({
+    required this.farms,
+    required this.selectedFarm,
+    required this.sortOption,
+    required this.dateFrom,
+    required this.dateTo,
+    required this.onlyDelivery,
+    required this.hasFilters,
+    required this.onFarmChanged,
+    required this.onSortChanged,
+    required this.onDateFromChanged,
+    required this.onDateToChanged,
+    required this.onDeliveryChanged,
+    required this.onReset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // ── Ferme ──────────────────────────────────────────────────
+      const _FilterLabel(label: 'Ferme'),
+      Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: farms
+            .map((f) => _FilterChip(
+                  label: f,
+                  isSelected: selectedFarm == f,
+                  onTap: () => onFarmChanged(f),
+                ))
+            .toList(),
+      ),
+      const SizedBox(height: 20),
+
+      // ── Période ────────────────────────────────────────────────
+      const _FilterLabel(label: 'Période'),
+      Row(children: [
+        Expanded(
+          child: _DateButton(
+            label: dateFrom != null
+                ? '${dateFrom!.day}/${dateFrom!.month}'
+                : 'Du',
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: dateFrom ?? DateTime.now(),
+                firstDate: DateTime(2026, 1),
+                lastDate: DateTime.now(),
+                builder: (ctx, child) => Theme(
+                  data: Theme.of(ctx).copyWith(
+                    colorScheme: const ColorScheme.light(
+                        primary: AppColors.primary),
+                  ),
+                  child: child!,
+                ),
+              );
+              onDateFromChanged(picked);
+            },
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: Text('—',
+              style: TextStyle(color: AppColors.textSecondary)),
+        ),
+        Expanded(
+          child: _DateButton(
+            label: dateTo != null
+                ? '${dateTo!.day}/${dateTo!.month}'
+                : 'Au',
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: dateTo ?? DateTime.now(),
+                firstDate: DateTime(2026, 1),
+                lastDate: DateTime.now(),
+                builder: (ctx, child) => Theme(
+                  data: Theme.of(ctx).copyWith(
+                    colorScheme: const ColorScheme.light(
+                        primary: AppColors.primary),
+                  ),
+                  child: child!,
+                ),
+              );
+              onDateToChanged(picked);
+            },
+          ),
+        ),
+        if (dateFrom != null || dateTo != null)
+          IconButton(
+            icon: const Icon(Icons.clear,
+                size: 16, color: AppColors.textSecondary),
+            onPressed: () {
+              onDateFromChanged(null);
+              onDateToChanged(null);
+            },
+          ),
+      ]),
+      const SizedBox(height: 20),
+
+      // ── Tri ────────────────────────────────────────────────────
+      const _FilterLabel(label: 'Trier par'),
+      Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          _FilterChip(
+              label: 'Date ↓',
+              isSelected: sortOption == TxSortOption.dateDesc,
+              onTap: () => onSortChanged(TxSortOption.dateDesc)),
+          _FilterChip(
+              label: 'Date ↑',
+              isSelected: sortOption == TxSortOption.dateAsc,
+              onTap: () => onSortChanged(TxSortOption.dateAsc)),
+          _FilterChip(
+              label: 'Montant ↓',
+              isSelected: sortOption == TxSortOption.montantDesc,
+              onTap: () => onSortChanged(TxSortOption.montantDesc)),
+          _FilterChip(
+              label: 'Montant ↑',
+              isSelected: sortOption == TxSortOption.montantAsc,
+              onTap: () => onSortChanged(TxSortOption.montantAsc)),
+        ],
+      ),
+      const SizedBox(height: 20),
+
+      // ── Mode de retrait ────────────────────────────────────────
+      const _FilterLabel(label: 'Mode de retrait'),
+      Row(children: [
+        Switch(
+          value: onlyDelivery,
+          activeColor: AppColors.primary,
+          onChanged: onDeliveryChanged,
+        ),
+        const SizedBox(width: 6),
+        const Text('Livraisons seulement',
+            style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 13,
+                color: AppColors.textPrimary)),
+      ]),
+    ]);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Carte transaction
+// ─────────────────────────────────────────────────────────────────
+class _TxCard extends StatelessWidget {
+  final AdminTransaction tx;
+  final String Function(double) formatPrice;
+
+  const _TxCard({required this.tx, required this.formatPrice});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.07),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.swap_horiz,
+              color: AppColors.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+            Row(children: [
+              Text('#${tx.ref}',
+                  style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary)),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: tx.isDelivery
+                      ? AppColors.primary.withOpacity(0.08)
+                      : AppColors.accent.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    Icon(
+      tx.isDelivery
+          ? Icons.local_shipping_rounded
+          : Icons.storefront_rounded,
+      size: 10,
+      color: tx.isDelivery
+          ? AppColors.primary
+          : const Color(0xFF412402),
+    ),
+    const SizedBox(width: 3),
+    Text(
+      tx.isDelivery ? 'Livraison' : 'Retrait',
+      style: const TextStyle(
+          fontFamily: 'Poppins', fontSize: 9),
+    ),
+  ],
+),
+              ),
+            ]),
+            const SizedBox(height: 2),
+            Text('${tx.clientName} · ${tx.farmName}',
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 11,
+                    color: AppColors.textSecondary)),
+            Text('${tx.product} · ${tx.date}',
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 11,
+                    color: AppColors.textSecondary)),
+          ]),
+        ),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(formatPrice(tx.total),
+              style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary)),
+          const SizedBox(height: 2),
+          Text('Commission : ${formatPrice(tx.commission)}',
+              style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.success)),
+        ]),
+      ]),
+    );
+  }
+}
+
+// ─── Widgets utilitaires ──────────────────────────────────────────
+class _FilterLabel extends StatelessWidget {
+  final String label;
+  const _FilterLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Text(label,
+          style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary)),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  const _FilterChip(
+      {required this.label,
+      required this.isSelected,
+      required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.divider),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                fontWeight:
+                    isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected ? Colors.white : AppColors.textPrimary)),
+      ),
+    );
+  }
+}
+
+class _DateButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _DateButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.calendar_today_outlined,
+              size: 14, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Text(label,
+              style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  color: AppColors.textPrimary)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final String label;
+  final VoidCallback onRemove;
+  const _Chip({required this.label, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(label,
+            style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 11,
+                color: AppColors.primary)),
+        const SizedBox(width: 4),
+        InkWell(
+          onTap: onRemove,
+          child: const Icon(Icons.close, size: 13, color: AppColors.primary),
+        ),
+      ]),
+    );
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  const _SummaryItem(
+      {required this.label, required this.value, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 14, color: Colors.white70),
+      const SizedBox(width: 5),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label,
+            style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 10,
+                color: Colors.white70)),
+        if (value.isNotEmpty)
+          Text(value,
+              style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white)),
+      ]),
+    ]);
+  }
+}
+
+String _sortLabel(TxSortOption opt) {
+  switch (opt) {
+    case TxSortOption.dateDesc:   return 'Date ↓';
+    case TxSortOption.dateAsc:    return 'Date ↑';
+    case TxSortOption.montantDesc: return 'Montant ↓';
+    case TxSortOption.montantAsc:  return 'Montant ↑';
+  }
+}

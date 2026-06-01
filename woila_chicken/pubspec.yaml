@@ -1,0 +1,58 @@
+name: woila_chicken
+description: Plateforme de vente de poulets en ligne - Woïla Chicken
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management & navigation
+  get: ^4.7.3
+
+  # UI
+  cupertino_icons: ^1.0.6
+  cached_network_image: ^3.3.1
+  flutter_rating_bar: ^4.0.1
+  shimmer: ^3.0.0
+
+  # Backend Firebase
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.8
+  cloud_firestore: ^4.15.8
+  firebase_storage: ^11.6.10
+  firebase_messaging: ^14.7.20
+
+  # Utilitaires
+  intl: ^0.19.0
+  image_picker: ^1.0.7
+  url_launcher: ^6.2.5
+  shared_preferences: ^2.2.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+
+  assets:
+    - assets/images/
+    - assets/fonts/
+    - assets/icons/
