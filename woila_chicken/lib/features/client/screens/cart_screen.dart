@@ -99,7 +99,7 @@ class CartScreen extends StatelessWidget {
         children: [
           Icon(Icons.shopping_cart_outlined,
               size: 80,
-              color: AppColors.textSecondary.withOpacity(0.3)),
+              color: AppColors.textSecondary.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           const Text('Votre panier est vide',
               style: TextStyle(
@@ -191,7 +191,7 @@ class _CartItemCard extends StatelessWidget {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.06),
+                color: AppColors.primary.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(
@@ -376,7 +376,7 @@ class _SummaryPanel extends StatelessWidget {
                       top: Radius.circular(20)),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         blurRadius: 16,
                         offset: const Offset(0, -4))
                   ],
@@ -430,10 +430,10 @@ class _SummaryPanel extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.07),
+                  color: AppColors.success.withValues(alpha: 0.07),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: AppColors.success.withOpacity(0.3)),
+                      color: AppColors.success.withValues(alpha: 0.3)),
                 ),
                 child: const Row(children: [
                   Icon(Icons.shield_outlined,
@@ -529,7 +529,7 @@ class _ModeChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.08)
+              ? AppColors.primary.withValues(alpha: 0.08)
               : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(

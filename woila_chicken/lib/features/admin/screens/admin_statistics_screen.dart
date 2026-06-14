@@ -1,121 +1,418 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/widgets/kpi_card.dart';
+import '../../../core/widgets/responsive_layout.dart';
+import '../../../core/services/firestore_service.dart';
 
 class AdminStatisticsScreen extends StatelessWidget {
   const AdminStatisticsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final firestore = Get.find<FirestoreService>();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Statistiques marché'),
         backgroundColor: AppColors.adminColor,
       ),
-      body: ResponsiveLayout(
-        desktop: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: _buildContent(context, isDesktop: true),
-          ),
-        ),
-        mobile: _buildContent(context, isDesktop: false),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: firestore.getAdminStats(),
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
+          }
+          final stats = snap.data ?? {};
+          return ResponsiveLayout(
+            desktop: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 900),
+                child: _buildContent(context, stats, isDesktop: true),
+              ),
+            ),
+            mobile: _buildContent(context, stats, isDesktop: false),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, {required bool isDesktop}) {
+  Widget _buildContent(BuildContext context,
+      Map<String, dynamic> stats, {required bool isDesktop}) {
+    final totalCommission =
+        (stats['totalCommission'] as double? ?? 0.0);
+    final activeFarms = stats['activeFarms'] as int? ?? 0;
+    final openDisputes = stats['openDisputes'] as int? ?? 0;
+    final totalOrders = stats['totalOrders'] as int? ?? 0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // ── KPIs ────────────────────────────────────────────────
-        GridView.count(
-  shrinkWrap: true,
-  physics: const NeverScrollableScrollPhysics(),
-  crossAxisCount: isDesktop ? 4 : 2,
-  crossAxisSpacing: 12,
-  mainAxisSpacing: 12,
-  childAspectRatio: isDesktop ? 1.2 : 1.0,
-  children: const [
-    WoilaKpiCard(
-      value: '128 500',
-      unit: 'FCFA',
-      label: 'Commissions totales',
-      icon: Icons.account_balance_wallet_rounded,
-      color: AppColors.success,
-      trend: KpiTrend.up,
-      trendLabel: '+18%',
-    ),
-    WoilaKpiCard(
-      value: '6 425 000',
-      unit: 'FCFA',
-      label: 'Volume transactions',
-      icon: Icons.swap_horiz_rounded,
-      color: AppColors.primary,
-      trend: KpiTrend.up,
-      trendLabel: '+23%',
-    ),
-    WoilaKpiCard(
-      value: '3 680',
-      unit: 'FCFA',
-      label: 'Prix moyen poulet',
-      icon: Icons.monitor_weight_rounded,
-      color: AppColors.warning,
-      trend: KpiTrend.up,
-      trendLabel: '+5%',
-    ),
-    WoilaKpiCard(
-      value: '94',
-      unit: '%',
-      label: 'Taux de livraison',
-      icon: Icons.local_shipping_rounded,
-      color: AppColors.success,
-      trend: KpiTrend.up,
-      trendLabel: '+2%',
-    ),
-  ],
-),
-        const SizedBox(height: 24),
-
-        // ── Graphique ventes ─────────────────────────────────────
-        const _StatCard(
-          title: 'Ventes mensuelles (FCFA)',
-          icon: Icons.bar_chart_outlined,
-          child: _BarChart(
-            data: [
-              _BarData(label: 'Jan', value: 0.5),
-              _BarData(label: 'Fév', value: 0.65),
-              _BarData(label: 'Mar', value: 0.55),
-              _BarData(label: 'Avr', value: 0.8),
-              _BarData(label: 'Mai', value: 1.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── KPIs ────────────────────────────────────────────────
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: isDesktop ? 4 : 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: isDesktop ? 1.2 : 1.0,
+            children: [
+              WoilaKpiCard(
+                value: totalCommission.toStringAsFixed(0),
+                unit: 'FCFA',
+                label: 'Commissions totales',
+                icon: Icons.account_balance_wallet_rounded,
+                color: AppColors.success,
+                trend: KpiTrend.up,
+                trendLabel: 'ce mois',
+              ),
+              WoilaKpiCard(
+                value: '$totalOrders',
+                unit: 'commandes',
+                label: 'Total commandes',
+                icon: Icons.swap_horiz_rounded,
+                color: AppColors.primary,
+                trend: KpiTrend.up,
+                trendLabel: 'total',
+              ),
+              WoilaKpiCard(
+                value: '$activeFarms',
+                unit: 'fermes',
+                label: 'Fermes actives',
+                icon: Icons.store_rounded,
+                color: AppColors.warning,
+                trend: KpiTrend.neutral,
+                trendLabel: 'actives',
+              ),
+              WoilaKpiCard(
+                value: '$openDisputes',
+                unit: 'litiges',
+                label: 'Litiges ouverts',
+                icon: Icons.gavel_rounded,
+                color: AppColors.error,
+                trend: openDisputes > 0
+                    ? KpiTrend.down
+                    : KpiTrend.neutral,
+                trendLabel: openDisputes > 0 ? 'attention' : 'ok',
+              ),
             ],
           ),
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
-        // ── Top fermes + indicateurs ─────────────────────────────
-        isDesktop
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: _TopFarmes()),
-                  const SizedBox(width: 16),
-                  Expanded(child: _MarketIndicators()),
-                ],
-              )
-            : Column(children: [
-                _TopFarmes(),
-                const SizedBox(height: 16),
-                _MarketIndicators(),
-              ]),
+          // ── Graphique commandes par mois ─────────────────────────
+          _StatCard(
+            title: 'Commissions mensuelles (FCFA)',
+            icon: Icons.bar_chart_outlined,
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: Get.find<FirestoreService>().getAllOrders(),
+              builder: (context, snap) {
+                final orders = snap.data ?? [];
+                final monthlyData =
+                    _buildMonthlyData(orders);
+                return _BarChart(data: monthlyData);
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ── Indicateurs ──────────────────────────────────────────
+          isDesktop
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                        child: _TopFarmes(firestore:
+                            Get.find<FirestoreService>())),
+                    const SizedBox(width: 16),
+                    Expanded(child: _MarketIndicators(stats: stats)),
+                  ],
+                )
+              : Column(children: [
+                  _TopFarmes(
+                      firestore: Get.find<FirestoreService>()),
+                  const SizedBox(height: 16),
+                  _MarketIndicators(stats: stats),
+                ]),
+        ],
+      ),
+    );
+  }
+
+  List<_BarData> _buildMonthlyData(
+      List<Map<String, dynamic>> orders) {
+    final Map<int, double> monthlyCommission = {};
+    for (final order in orders) {
+      try {
+        final dt = (order['createdAt'] as dynamic).toDate();
+        final month = dt.month;
+        final commission =
+            (order['commission'] as num?)?.toDouble() ?? 0;
+        monthlyCommission[month] =
+            (monthlyCommission[month] ?? 0) + commission;
+      } catch (_) {}
+    }
+
+    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'];
+    final now = DateTime.now();
+    final result = <_BarData>[];
+    double maxVal = 1;
+
+    for (int i = 5; i >= 0; i--) {
+      final month = ((now.month - i - 1) % 12) + 1;
+      final val = monthlyCommission[month] ?? 0;
+      if (val > maxVal) maxVal = val;
+    }
+
+    for (int i = 5; i >= 0; i--) {
+      final month = ((now.month - i - 1) % 12) + 1;
+      final val = monthlyCommission[month] ?? 0;
+      result.add(_BarData(
+        label: months[5 - i],
+        value: maxVal > 0 ? val / maxVal : 0,
+        rawValue: val,
+      ));
+    }
+    return result;
+  }
+}
+
+// ─── Top fermes ────────────────────────────────────────────────────
+class _TopFarmes extends StatelessWidget {
+  final FirestoreService firestore;
+  const _TopFarmes({required this.firestore});
+
+  @override
+  Widget build(BuildContext context) {
+    return _StatCard(
+      title: 'Top fermes ce mois',
+      icon: Icons.leaderboard_outlined,
+      child: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: firestore.getAllFarms(),
+        builder: (context, snap) {
+          final farms = snap.data ?? [];
+          final verified = farms
+              .where((f) => f['isVerified'] == true)
+              .toList();
+
+          if (verified.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Aucune ferme vérifiée',
+                    style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        color: AppColors.textSecondary)),
+              ),
+            );
+          }
+
+          return Column(
+            children: verified.take(3).toList().asMap().entries.map((e) {
+              final rank = e.key + 1;
+              final farm = e.value;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: _rankColor(rank).withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text('#$rank',
+                          style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: _rankColor(rank))),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(farm['name'] as String? ?? '',
+                            style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary)),
+                        Text(
+                          '${farm['rating'] ?? 0} ★ · ${farm['totalRatings'] ?? 0} avis',
+                          style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ]),
+              );
+            }).toList(),
+          );
+        },
+      ),
+    );
+  }
+
+  Color _rankColor(int rank) {
+    switch (rank) {
+      case 1: return AppColors.accent;
+      case 2: return AppColors.textSecondary;
+      case 3: return const Color(0xFFCD7F32);
+      default: return AppColors.textSecondary;
+    }
+  }
+}
+
+// ─── Indicateurs marché ────────────────────────────────────────────
+class _MarketIndicators extends StatelessWidget {
+  final Map<String, dynamic> stats;
+  const _MarketIndicators({required this.stats});
+
+  @override
+  Widget build(BuildContext context) {
+    final totalOrders = stats['totalOrders'] as int? ?? 0;
+    final activeFarms = stats['activeFarms'] as int? ?? 0;
+    final openDisputes = stats['openDisputes'] as int? ?? 0;
+    final totalCommission =
+        (stats['totalCommission'] as double? ?? 0.0);
+
+    final deliveryRate = totalOrders > 0
+        ? '${((totalOrders - openDisputes) / totalOrders * 100).toStringAsFixed(0)} %'
+        : '— %';
+
+    return _StatCard(
+      title: 'Indicateurs clés',
+      icon: Icons.insights_outlined,
+      child: Column(children: [
+        _IndicatorRow(
+          label: 'Commissions totales',
+          value: '${totalCommission.toStringAsFixed(0)} FCFA',
+          trend: '',
+          isUp: true,
+        ),
+        const SizedBox(height: 10),
+        _IndicatorRow(
+          label: 'Fermes actives',
+          value: '$activeFarms fermes',
+          trend: '',
+          isUp: true,
+        ),
+        const SizedBox(height: 10),
+        _IndicatorRow(
+          label: 'Total commandes',
+          value: '$totalOrders',
+          trend: '',
+          isUp: true,
+        ),
+        const SizedBox(height: 10),
+        _IndicatorRow(
+          label: 'Taux de livraison',
+          value: deliveryRate,
+          trend: '',
+          isUp: openDisputes == 0,
+        ),
+        const SizedBox(height: 10),
+        _IndicatorRow(
+          label: 'Litiges ouverts',
+          value: '$openDisputes',
+          trend: openDisputes == 0 ? 'ok' : 'attention',
+          isUp: openDisputes == 0,
+        ),
       ]),
     );
   }
 }
 
+// ─── Graphique barres ──────────────────────────────────────────────
+class _BarData {
+  final String label;
+  final double value;
+  final double rawValue;
+  const _BarData({
+    required this.label,
+    required this.value,
+    required this.rawValue,
+  });
+}
 
+class _BarChart extends StatelessWidget {
+  final List<_BarData> data;
+  const _BarChart({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    if (data.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Text('Aucune donnée disponible',
+              style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  color: AppColors.textSecondary)),
+        ),
+      );
+    }
+    return SizedBox(
+      height: 160,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: data.map((d) {
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (d.rawValue > 0)
+                    Text(
+                      '${d.rawValue.toStringAsFixed(0)} F',
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 8,
+                          color: AppColors.textSecondary),
+                    ),
+                  const SizedBox(height: 4),
+                  Container(
+                    height: (d.value * 110).clamp(4.0, 110.0),
+                    decoration: BoxDecoration(
+                      color: d.value >= 0.9
+                          ? AppColors.primary
+                          : AppColors.primary
+                              .withOpacity(0.3 + d.value * 0.4),
+                      borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(6)),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(d.label,
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ─── Widgets utilitaires ──────────────────────────────────────────
 class _StatCard extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -136,195 +433,23 @@ class _StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.divider),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(width: 8),
-          Text(title,
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary)),
-        ]),
-        const SizedBox(height: 16),
-        child,
-      ]),
-    );
-  }
-}
-
-// ─── Graphique barres simple ───────────────────────────────────────
-class _BarData {
-  final String label;
-  final double value; // 0.0 à 1.0
-  const _BarData({required this.label, required this.value});
-}
-
-class _BarChart extends StatelessWidget {
-  final List<_BarData> data;
-  const _BarChart({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 160,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: data.map((d) {
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                Text(
-                  d.value == 1.0 ? '6.4M' : '${(d.value * 6.4).toStringAsFixed(1)}M',
-                  style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 9,
-                      color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 4),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 600),
-                  height: d.value * 110,
-                  decoration: BoxDecoration(
-                    color: d.value == 1.0
-                        ? AppColors.primary
-                        : AppColors.primary.withOpacity(0.3 + d.value * 0.4),
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(6)),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(d.label,
-                    style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        color: AppColors.textSecondary)),
-              ]),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-// ─── Top fermes ────────────────────────────────────────────────────
-class _TopFarmes extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const _StatCard(
-      title: 'Top fermes ce mois',
-      icon: Icons.leaderboard_outlined,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _FarmRankRow(rank: 1, name: 'Ferme Bougué',
-              sales: 21, revenue: '88 200'),
-          SizedBox(height: 8),
-          _FarmRankRow(rank: 2, name: 'Ferme Koné',
-              sales: 14, revenue: '49 000'),
-          SizedBox(height: 8),
-          _FarmRankRow(rank: 3, name: 'Ferme Alhadji',
-              sales: 9, revenue: '31 500'),
+          Row(children: [
+            Icon(icon, color: AppColors.primary, size: 20),
+            const SizedBox(width: 8),
+            Text(title,
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary)),
+          ]),
+          const SizedBox(height: 16),
+          child,
         ],
       ),
-    );
-  }
-}
-
-class _FarmRankRow extends StatelessWidget {
-  final int rank;
-  final String name;
-  final int sales;
-  final String revenue;
-
-  const _FarmRankRow({
-    required this.rank,
-    required this.name,
-    required this.sales,
-    required this.revenue,
-  });
-
-  Color get _rankColor {
-    switch (rank) {
-      case 1: return AppColors.accent;
-      case 2: return AppColors.textSecondary;
-      case 3: return const Color(0xFFCD7F32);
-      default: return AppColors.textSecondary;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          color: _rankColor.withOpacity(0.15),
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Text('#$rank',
-              style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: _rankColor)),
-        ),
-      ),
-      const SizedBox(width: 10),
-      Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(name,
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary)),
-          Text('$sales ventes',
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 11,
-                  color: AppColors.textSecondary)),
-        ]),
-      ),
-      Text('$revenue FCFA',
-          style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary)),
-    ]);
-  }
-}
-
-// ─── Indicateurs marché ────────────────────────────────────────────
-class _MarketIndicators extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const _StatCard(
-      title: 'Indicateurs marché',
-      icon: Icons.insights_outlined,
-      child: Column(children: [
-        _IndicatorRow(label: 'Prix moyen poulet', value: '3 680 FCFA',
-            trend: '+5%', isUp: true),
-        SizedBox(height: 10),
-        _IndicatorRow(label: 'Note satisfaction', value: '4.7 / 5 ★',
-            trend: '+0.2', isUp: true),
-        SizedBox(height: 10),
-        _IndicatorRow(label: 'Taux livraison réussie', value: '94 %',
-            trend: '+2%', isUp: true),
-        SizedBox(height: 10),
-        _IndicatorRow(label: 'Taux de litiges', value: '0.5 %',
-            trend: '-0.1%', isUp: false),
-        SizedBox(height: 10),
-        _IndicatorRow(label: 'Nouvelles inscriptions', value: '2 fermes',
-            trend: 'ce mois', isUp: true),
-      ]),
     );
   }
 }
@@ -358,22 +483,25 @@ class _IndicatorRow extends StatelessWidget {
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary)),
-      const SizedBox(width: 8),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: isUp
-              ? AppColors.success.withOpacity(0.1)
-              : AppColors.error.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
+      if (trend.isNotEmpty) ...[
+        const SizedBox(width: 8),
+        Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: isUp
+                ? AppColors.success.withOpacity(0.1)
+                : AppColors.error.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(trend,
+              style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: isUp ? AppColors.success : AppColors.error)),
         ),
-        child: Text(trend,
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: isUp ? AppColors.success : AppColors.error)),
-      ),
+      ],
     ]);
   }
 }

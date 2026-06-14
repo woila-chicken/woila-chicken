@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/responsive_layout.dart';
@@ -151,19 +152,19 @@ class _BrandPanel extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.75))),
               const SizedBox(height: 48),
 
-              _FeatureItem(
+              const _FeatureItem(
                   icon: Icons.verified_outlined,
                   label: 'Produits certifiés et vérifiés'),
               const SizedBox(height: 12),
-              _FeatureItem(
+              const _FeatureItem(
                   icon: Icons.local_shipping_outlined,
                   label: 'Livraison ou retrait à la ferme'),
               const SizedBox(height: 12),
-              _FeatureItem(
+              const _FeatureItem(
                   icon: Icons.phone_android_outlined,
                   label: 'Paiement sécurisé Mobile Money'),
               const SizedBox(height: 12),
-              _FeatureItem(
+              const _FeatureItem(
                   icon: Icons.star_outline,
                   label: 'Fermes notées par la communauté'),
             ],
@@ -206,35 +207,90 @@ class _FeatureItem extends StatelessWidget {
 class _LoginForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final auth = Get.find<AuthService>();
+    final emailCtrl = TextEditingController();
+    final passCtrl = TextEditingController();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Bienvenue', style: Theme.of(context).textTheme.displayMedium),
+        Text('Bienvenue',
+            style: Theme.of(context).textTheme.displayMedium),
         const SizedBox(height: 6),
         Text('Connectez-vous à votre espace',
             style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(height: 32),
+
         TextFormField(
+          controller: emailCtrl,
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
             labelText: 'Adresse email',
-            prefixIcon: Icon(Icons.email_outlined, color: AppColors.primary),
+            prefixIcon: Icon(Icons.email_outlined,
+                color: AppColors.primary),
           ),
         ),
         const SizedBox(height: 16),
+
         TextFormField(
+          controller: passCtrl,
           obscureText: true,
           decoration: const InputDecoration(
             labelText: 'Mot de passe',
-            prefixIcon: Icon(Icons.lock_outline, color: AppColors.primary),
+            prefixIcon: Icon(Icons.lock_outline,
+                color: AppColors.primary),
           ),
         ),
         const SizedBox(height: 8),
+
+        // Erreur Firebase
+        Obx(() => auth.errorMessage.value.isNotEmpty
+            ? Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3)),
+                ),
+                child: Row(children: [
+                  const Icon(Icons.error_outline,
+                      color: AppColors.error, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      auth.errorMessage.value,
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          color: AppColors.error),
+                    ),
+                  ),
+                ]),
+              )
+            : const SizedBox.shrink()),
+
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () {},
+            onPressed: () async {
+              if (emailCtrl.text.isNotEmpty) {
+                final sent = await auth
+                    .resetPassword(emailCtrl.text.trim());
+                Get.snackbar(
+                  sent ? 'Email envoyé' : 'Erreur',
+                  sent
+                      ? 'Vérifiez votre boîte mail'
+                      : 'Email introuvable',
+                  backgroundColor:
+                      sent ? AppColors.success : AppColors.error,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              }
+            },
             child: const Text('Mot de passe oublié ?',
                 style: TextStyle(
                     color: AppColors.primary,
@@ -242,25 +298,53 @@ class _LoginForm extends StatelessWidget {
                     fontSize: 13)),
           ),
         ),
-        const SizedBox(height: 16),
-        ElevatedButton(
-          onPressed: () => Get.toNamed(AppRoutes.roleSelection),
-          child: const Text('Se connecter'),
-        ),
+        const SizedBox(height: 8),
+
+        // Bouton connexion
+        Obx(() => ElevatedButton(
+              onPressed: auth.isLoading.value
+                  ? null
+                  : () async {
+                      auth.errorMessage.value = '';
+                      final success = await auth.login(
+                        email: emailCtrl.text.trim(),
+                        password: passCtrl.text,
+                      );
+                      if (success) {
+                        Get.toNamed(
+                          AppRoutes.roleSelection,
+                          arguments: {
+                            'isAdmin': auth.isAdmin.value,
+                          },
+                        );
+                      }
+                    },
+              child: auth.isLoading.value
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white),
+                    )
+                  : const Text('Se connecter'),
+            )),
         const SizedBox(height: 20),
-        Row(
-          children: [
-            const Expanded(child: Divider()),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text('ou', style: Theme.of(context).textTheme.bodyMedium),
-            ),
-            const Expanded(child: Divider()),
-          ],
-        ),
+
+        Row(children: [
+          const Expanded(child: Divider()),
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12),
+            child: Text('ou',
+                style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          const Expanded(child: Divider()),
+        ]),
         const SizedBox(height: 20),
+
         OutlinedButton(
-          onPressed: () {},
+          onPressed: () => Get.toNamed(AppRoutes.register),
           child: const Text('Créer un compte'),
         ),
       ],

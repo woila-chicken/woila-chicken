@@ -5,6 +5,7 @@ import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/models/product.dart';
 import '../controllers/cart_controller.dart';
+import '../controllers/catalogue_controller.dart';
 import 'catalogue_screen.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
@@ -23,6 +24,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<CatalogueController>()) {
+    Get.put(CatalogueController());
+  }
     return ResponsiveLayout(
       desktop: _DesktopClientLayout(
         selectedIndex: _selectedIndex,
@@ -60,8 +64,8 @@ class _DesktopClientLayout extends StatelessWidget {
               children: [
                 // Header sidebar
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 24),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                   child: Row(
                     children: [
                       Container(
@@ -113,19 +117,19 @@ class _DesktopClientLayout extends StatelessWidget {
                   onTap: () => Get.toNamed(AppRoutes.catalogue),
                 ),
                 _SidebarItem(
-  icon: Icons.receipt_long_outlined,
-  activeIcon: Icons.receipt_long,
-  label: 'Mes commandes',
-  isSelected: selectedIndex == 2,
-  onTap: () => Get.to(() => const OrdersScreen()),
-),
-_SidebarItem(
-  icon: Icons.person_outline,
-  activeIcon: Icons.person,
-  label: 'Mon profil',
-  isSelected: selectedIndex == 3,
-  onTap: () => Get.to(() => const ProfileScreen()),
-),
+                  icon: Icons.receipt_long_outlined,
+                  activeIcon: Icons.receipt_long,
+                  label: 'Mes commandes',
+                  isSelected: selectedIndex == 2,
+                  onTap: () => Get.to(() => const OrdersScreen()),
+                ),
+                _SidebarItem(
+                  icon: Icons.person_outline,
+                  activeIcon: Icons.person,
+                  label: 'Mon profil',
+                  isSelected: selectedIndex == 3,
+                  onTap: () => Get.to(() => const ProfileScreen()),
+                ),
                 const Spacer(),
                 const Divider(height: 1),
                 _SidebarItem(
@@ -150,8 +154,8 @@ _SidebarItem(
               children: [
                 // TopBar desktop
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 32, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   color: Colors.white,
                   child: Row(
                     children: [
@@ -159,8 +163,8 @@ _SidebarItem(
                         child: _SearchBar(),
                       ),
                       const SizedBox(width: 16),
-                      _NotifButton(color: AppColors.primary),
-                      _CartButton(color: AppColors.primary),
+                      const _NotifButton(color: AppColors.primary),
+                      const _CartButton(color: AppColors.primary),
                     ],
                   ),
                 ),
@@ -168,16 +172,16 @@ _SidebarItem(
 
                 // Corps scrollable
                 Expanded(
-  child: SingleChildScrollView(
-    padding: const EdgeInsets.all(32),
-    child: Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1100),
-        child: const _ClientHomeBody(isDesktop: true),
-      ),
-    ),
-  ),
-),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(32),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1100),
+                        child: const _ClientHomeBody(isDesktop: true),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -203,10 +207,10 @@ class _MobileClientLayout extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Woïla Chicken'),
-        actions: [
-  _NotifButton(),
-  _CartButton(),
-],
+        actions: const [
+          _NotifButton(),
+          _CartButton(),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -222,13 +226,20 @@ class _MobileClientLayout extends StatelessWidget {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: selectedIndex,
         onTap: (i) {
-  switch (i) {
-    case 1: Get.to(() => const CatalogueScreen()); break;
-    case 2: Get.to(() => const OrdersScreen()); break;
-    case 3: Get.to(() => const ProfileScreen()); break;
-    default: onNavTap(i);
-  }
-},
+          switch (i) {
+            case 1:
+              Get.to(() => const CatalogueScreen());
+              break;
+            case 2:
+              Get.to(() => const OrdersScreen());
+              break;
+            case 3:
+              Get.to(() => const ProfileScreen());
+              break;
+            default:
+              onNavTap(i);
+          }
+        },
         items: const [
           BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
@@ -271,50 +282,65 @@ class _ClientHomeBody extends StatelessWidget {
             SizedBox(width: 12),
             _StatCard(value: '180', label: 'Produits'),
             SizedBox(width: 12),
-            _StatCard(value: '4.8 ★', label: 'Note moy.'),
+            _StatCard(value: '4.8',icon: Icons.star, label: 'Note moy.'),
           ],
         ),
         const SizedBox(height: 24),
 
         Row(children: [
-  Expanded(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Produits disponibles',
-            style: Theme.of(context).textTheme.headlineMedium),
-        Text('Garoua et environs',
-            style: Theme.of(context).textTheme.bodyMedium),
-      ],
-    ),
-  ),
-  TextButton.icon(
-    onPressed: () => Get.toNamed(AppRoutes.catalogue),
-    icon: const Icon(Icons.arrow_forward,
-        size: 16, color: AppColors.primary),
-    label: const Text('Voir tout',
-        style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 13,
-            color: AppColors.primary)),
-  ),
-]),
-const SizedBox(height: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Produits disponibles',
+                    style: Theme.of(context).textTheme.headlineMedium),
+                Text('Garoua et environs',
+                    style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ),
+          ),
+          TextButton.icon(
+            onPressed: () => Get.toNamed(AppRoutes.catalogue),
+            icon: const Icon(Icons.arrow_forward,
+                size: 16, color: AppColors.primary),
+            label: const Text('Voir tout',
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    color: AppColors.primary)),
+          ),
+        ]),
+        const SizedBox(height: 16),
 
         // Grille produits — 2 colonnes mobile, 3-4 desktop
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: isDesktop ? 4 : 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            mainAxisExtent: 230,
-          ),
-          itemCount: _mockProducts.length,
-          itemBuilder: (context, index) =>
-              _ProductCard(product: _mockProducts[index]),
-        ),
+        Obx(() {
+  final ctrl = Get.find<CatalogueController>();
+  if (ctrl.isLoading.value) {
+    return const Center(
+      child: CircularProgressIndicator(color: AppColors.primary),
+    );
+  }
+  final products = ctrl.products.take(8).toList();
+  if (products.isEmpty) {
+    return Center(
+      child: Text('Aucun produit disponible',
+          style: Theme.of(context).textTheme.bodyMedium),
+    );
+  }
+  return GridView.builder(
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: isDesktop ? 4 : 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      mainAxisExtent: 230,
+    ),
+    itemCount: products.length,
+    itemBuilder: (context, index) =>
+        _ProductCard(product: products[index]),
+  );
+}),
       ],
     );
   }
@@ -356,7 +382,8 @@ class _SearchBar extends StatelessWidget {
 class _StatCard extends StatelessWidget {
   final String value;
   final String label;
-  const _StatCard({required this.value, required this.label});
+  final IconData? icon;
+   const _StatCard({required this.value, required this.label, this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -364,24 +391,37 @@ class _StatCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.06),
+          color: AppColors.primary.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Column(
-          children: [
-            Text(value,
-                style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary)),
-            const SizedBox(height: 2),
-            Text(label,
-                style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11,
-                    color: AppColors.textSecondary)),
-          ],
+        child: Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(value,
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary)),
+                  icon != null ? Icon(
+                   icon,
+                    color: AppColors.primary, 
+                    size: 18,
+                  ):const SizedBox()
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(label,
+                  style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 11,
+                      color: AppColors.textSecondary)),
+            ],
+          ),
         ),
       ),
     );
@@ -407,7 +447,7 @@ class _ProductCard extends StatelessWidget {
           border: Border.all(color: AppColors.divider),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -422,9 +462,9 @@ class _ProductCard extends StatelessWidget {
                 Container(
                   height: 100,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.06),
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(14)),
+                    color: AppColors.primary.withValues(alpha: 0.06),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(14)),
                   ),
                   child: Center(
                     child: Image.asset(
@@ -433,15 +473,16 @@ class _ProductCard extends StatelessWidget {
                       height: 70,
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => const Center(
-                        child:Icon(Icons.set_meal_rounded,
-      color: AppColors.primary, size: 40),
+                        child: Icon(Icons.set_meal_rounded,
+                            color: AppColors.primary, size: 40),
                       ),
                     ),
                   ),
                 ),
                 if (product.hasSanitaryCert)
                   Positioned(
-                    top: 8, left: 8,
+                    top: 8,
+                    left: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 7, vertical: 3),
@@ -449,28 +490,40 @@ class _ProductCard extends StatelessWidget {
                         color: AppColors.success,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text('✓ Certifié',
-                          style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white)),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.verified_rounded,
+                              size: 10, color: Colors.white),
+                          SizedBox(width: 3),
+                          Text('Certifié',
+                              style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white)),
+                        ],
+                      ),
                     ),
                   ),
                 Positioned(
-                  top: 8, right: 8,
+                  top: 8,
+                  right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
                       color: product.deliveryAvailable
                           ? AppColors.primary
                           : AppColors.accent,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      product.deliveryAvailable ? '🚚' : '🏪',
-                      style: const TextStyle(fontSize: 10),
+                    child: Icon(
+                      product.deliveryAvailable
+                          ? Icons.local_shipping_rounded
+                          : Icons.storefront_rounded,
+                      size: 12,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -495,7 +548,7 @@ class _ProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    product.formattedPrice,
+                    product.pricefcfa as String,
                     style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 14,
@@ -520,8 +573,7 @@ class _ProductCard extends StatelessWidget {
                   ]),
                   const SizedBox(height: 2),
                   Row(children: [
-                    const Icon(Icons.star,
-                        size: 12, color: AppColors.accent),
+                    const Icon(Icons.star, size: 12, color: AppColors.accent),
                     const SizedBox(width: 2),
                     Text(
                       product.farmRating.toString(),
@@ -540,7 +592,6 @@ class _ProductCard extends StatelessWidget {
     );
   }
 }
-
 
 class _SidebarItem extends StatelessWidget {
   final IconData icon;
@@ -561,14 +612,15 @@ class _SidebarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final itemColor = color ?? (isSelected ? AppColors.primary : AppColors.textSecondary);
+    final itemColor =
+        color ?? (isSelected ? AppColors.primary : AppColors.textSecondary);
     return InkWell(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.08) : null,
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.08) : null,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
@@ -580,8 +632,7 @@ class _SidebarItem extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
-                fontWeight:
-                    isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 color: itemColor,
               ),
             ),
@@ -592,8 +643,6 @@ class _SidebarItem extends StatelessWidget {
   }
 }
 
-// ─── Données mock (seront remplacées par Firebase) ────────────────
-final _mockProducts = mockProducts.take(6).toList();
 
 class _NotifButton extends StatelessWidget {
   final Color color;
@@ -616,8 +665,7 @@ class _NotifButton extends StatelessWidget {
                 backgroundColor: AppColors.primary,
                 colorText: Colors.white,
                 snackPosition: SnackPosition.TOP,
-                icon: const Icon(Icons.notifications,
-                    color: Colors.white),
+                icon: const Icon(Icons.notifications, color: Colors.white),
                 duration: const Duration(seconds: 2),
               );
             },
@@ -629,8 +677,7 @@ class _NotifButton extends StatelessWidget {
               width: 14,
               height: 14,
               decoration: const BoxDecoration(
-                  color: AppColors.error,
-                  shape: BoxShape.circle),
+                  color: AppColors.error, shape: BoxShape.circle),
               child: const Center(
                 child: Text('2',
                     style: TextStyle(
@@ -677,8 +724,7 @@ class _CartButton extends StatelessWidget {
                   width: 16,
                   height: 16,
                   decoration: const BoxDecoration(
-                      color: AppColors.accent,
-                      shape: BoxShape.circle),
+                      color: AppColors.accent, shape: BoxShape.circle),
                   child: Center(
                     child: Text(
                       count > 9 ? '9+' : '$count',

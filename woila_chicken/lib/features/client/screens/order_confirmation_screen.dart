@@ -55,7 +55,7 @@ class OrderConfirmationScreen extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.success, width: 2),
             ),
@@ -86,7 +86,7 @@ class OrderConfirmationScreen extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.06),
+              color: AppColors.primary.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Column(children: [
@@ -125,7 +125,7 @@ class OrderConfirmationScreen extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary)),
                 const SizedBox(height: 16),
-                _TimelineItem(
+                const _TimelineItem(
                   title: 'Paiement confirmé',
                   subtitle: 'Fonds en séquestre sécurisé',
                   color: AppColors.success,
@@ -148,7 +148,7 @@ class OrderConfirmationScreen extends StatelessWidget {
                   isDone: false,
                   isLast: false,
                 ),
-                _TimelineItem(
+                const _TimelineItem(
                   title: 'Confirmation réception',
                   subtitle: 'Vous confirmez → l\'éleveur est payé',
                   color: AppColors.divider,
@@ -173,7 +173,7 @@ class OrderConfirmationScreen extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.06),
+                  color: AppColors.primary.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Padding(

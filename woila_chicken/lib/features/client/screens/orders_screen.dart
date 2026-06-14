@@ -2,74 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/responsive_layout.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/firestore_service.dart';
 import 'order_tracking_screen.dart';
 
 enum OrderFilter { toutes, enCours, livrees, terminees }
-
-class ClientOrder {
-  final String ref;
-  final String productName;
-  final String farmName;
-  final double total;
-  final String date;
-  final String status;
-  final Color statusColor;
-  final bool canTrack;
-
-  const ClientOrder({
-    required this.ref,
-    required this.productName,
-    required this.farmName,
-    required this.total,
-    required this.date,
-    required this.status,
-    required this.statusColor,
-    required this.canTrack,
-  });
-}
-
-final _mockOrders = [
-  ClientOrder(
-    ref: 'WC-1043',
-    productName: 'Poulet fermier 2kg × 2',
-    farmName: 'Ferme Koné',
-    total: 7500,
-    date: '10 mai 2026',
-    status: 'En cours',
-    statusColor: AppColors.warning,
-    canTrack: true,
-  ),
-  ClientOrder(
-    ref: 'WC-1040',
-    productName: 'Poulet local 1.8kg × 1',
-    farmName: 'Ferme Alhadji',
-    total: 2800,
-    date: '7 mai 2026',
-    status: 'Livré',
-    statusColor: AppColors.success,
-    canTrack: true,
-  ),
-  ClientOrder(
-    ref: 'WC-1036',
-    productName: 'Gros poulet 2.5kg × 2',
-    farmName: 'Ferme Bougué',
-    total: 8400,
-    date: '3 mai 2026',
-    status: 'Terminée',
-    statusColor: AppColors.textSecondary,
-    canTrack: false,
-  ),
-  ClientOrder(
-    ref: 'WC-1030',
-    productName: 'Poulet bio 2.2kg × 1',
-    farmName: 'Ferme Hamidou',
-    total: 4500,
-    date: '25 avr 2026',
-    status: 'Terminée',
-    statusColor: AppColors.textSecondary,
-    canTrack: false,
-  ),
-];
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -80,31 +17,63 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   OrderFilter _filter = OrderFilter.toutes;
-
-  List<ClientOrder> get _filtered {
-    switch (_filter) {
-      case OrderFilter.toutes:
-        return _mockOrders;
-      case OrderFilter.enCours:
-        return _mockOrders
-            .where((o) => o.status == 'En cours')
-            .toList();
-      case OrderFilter.livrees:
-        return _mockOrders
-            .where((o) => o.status == 'Livré')
-            .toList();
-      case OrderFilter.terminees:
-        return _mockOrders
-            .where((o) => o.status == 'Terminée')
-            .toList();
-    }
-  }
+  final _auth = Get.find<AuthService>();
+  final _firestore = Get.find<FirestoreService>();
 
   String _formatPrice(double p) =>
       '${p.toStringAsFixed(0).replaceAllMapped(
             RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
             (m) => '${m[1]} ',
           )} FCFA';
+
+  List<Map<String, dynamic>> _applyFilter(
+      List<Map<String, dynamic>> orders) {
+    switch (_filter) {
+      case OrderFilter.toutes:
+        return orders;
+      case OrderFilter.enCours:
+        return orders
+            .where((o) => ['pending', 'confirmed', 'inRoute']
+                .contains(o['status']))
+            .toList();
+      case OrderFilter.livrees:
+        return orders
+            .where((o) => o['status'] == 'delivered')
+            .toList();
+      case OrderFilter.terminees:
+        return orders
+            .where((o) => o['status'] == 'completed')
+            .toList();
+    }
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'pending':   return 'En attente';
+      case 'confirmed': return 'Confirmée';
+      case 'inRoute':   return 'En route';
+      case 'delivered': return 'Livré';
+      case 'completed': return 'Terminée';
+      case 'disputed':  return 'Litige';
+      default:          return status;
+    }
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'pending':   return AppColors.warning;
+      case 'confirmed': return AppColors.primary;
+      case 'inRoute':   return Colors.blue;
+      case 'delivered': return AppColors.success;
+      case 'completed': return AppColors.textSecondary;
+      case 'disputed':  return AppColors.error;
+      default:          return AppColors.textSecondary;
+    }
+  }
+
+  bool _canTrack(String status) =>
+      ['pending', 'confirmed', 'inRoute', 'delivered']
+          .contains(status);
 
   @override
   Widget build(BuildContext context) {
@@ -124,91 +93,148 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildContent() {
-    return Column(
-      children: [
-        // Filtres
-        SizedBox(
-          height: 52,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 8),
-            children: [
-              _FilterTab(
-                label: 'Toutes',
+    return Column(children: [
+      // Filtres
+      SizedBox(
+        height: 52,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 8),
+          children: [
+            _FilterTab(label: 'Toutes',
                 isSelected: _filter == OrderFilter.toutes,
-                onTap: () =>
-                    setState(() => _filter = OrderFilter.toutes),
-              ),
-              const SizedBox(width: 8),
-              _FilterTab(
-                label: 'En cours',
+                onTap: () => setState(() => _filter = OrderFilter.toutes)),
+            const SizedBox(width: 8),
+            _FilterTab(label: 'En cours',
                 isSelected: _filter == OrderFilter.enCours,
-                onTap: () =>
-                    setState(() => _filter = OrderFilter.enCours),
                 color: AppColors.warning,
-              ),
-              const SizedBox(width: 8),
-              _FilterTab(
-                label: 'Livré',
+                onTap: () => setState(() => _filter = OrderFilter.enCours)),
+            const SizedBox(width: 8),
+            _FilterTab(label: 'Livré',
                 isSelected: _filter == OrderFilter.livrees,
-                onTap: () =>
-                    setState(() => _filter = OrderFilter.livrees),
                 color: AppColors.success,
-              ),
-              const SizedBox(width: 8),
-              _FilterTab(
-                label: 'Terminées',
+                onTap: () => setState(() => _filter = OrderFilter.livrees)),
+            const SizedBox(width: 8),
+            _FilterTab(label: 'Terminées',
                 isSelected: _filter == OrderFilter.terminees,
-                onTap: () =>
-                    setState(() => _filter = OrderFilter.terminees),
                 color: AppColors.textSecondary,
-              ),
-            ],
-          ),
+                onTap: () => setState(() => _filter = OrderFilter.terminees)),
+          ],
         ),
+      ),
 
-        // Liste
-        Expanded(
-          child: _filtered.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.receipt_long_outlined,
-                          size: 64,
-                          color:
-                              AppColors.textSecondary.withOpacity(0.3)),
-                      const SizedBox(height: 12),
-                      const Text('Aucune commande',
-                          style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 15,
-                              color: AppColors.textSecondary)),
-                    ],
-                  ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _filtered.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(height: 10),
-                  itemBuilder: (_, i) => _OrderCard(
-                    order: _filtered[i],
-                    formatPrice: _formatPrice,
-                  ),
+      // Liste Firestore
+      Expanded(
+        child: StreamBuilder<List<Map<String, dynamic>>>(
+          stream: _firestore.getClientOrders(_auth.uid),
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(
+                    color: AppColors.primary),
+              );
+            }
+            if (snap.hasError) {
+              return Center(
+                child: Text('Erreur : ${snap.error}',
+                    style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        color: AppColors.error)),
+              );
+            }
+
+            final orders = _applyFilter(snap.data ?? []);
+
+            if (orders.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.receipt_long_outlined,
+                        size: 64,
+                        color: AppColors.textSecondary
+                            .withOpacity(0.3)),
+                    const SizedBox(height: 12),
+                    const Text('Aucune commande',
+                        style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 15,
+                            color: AppColors.textSecondary)),
+                  ],
                 ),
+              );
+            }
+
+            return ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: orders.length,
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: 10),
+              itemBuilder: (_, i) {
+                final order = orders[i];
+                final status = order['status'] ?? 'pending';
+                return _OrderCard(
+                  ref: order['ref'] ?? '',
+                  productName: order['productName'] ?? '',
+                  farmName: order['farmName'] ?? '',
+                  total: (order['total'] as num?)?.toDouble() ?? 0,
+                  date: _formatDate(order['createdAt']),
+                  status: _statusLabel(status),
+                  statusColor: _statusColor(status),
+                  canTrack: _canTrack(status),
+                  orderId: order['id'] ?? '',
+                  formatPrice: _formatPrice,
+                );
+              },
+            );
+          },
         ),
-      ],
-    );
+      ),
+    ]);
+  }
+
+  String _formatDate(dynamic timestamp) {
+    if (timestamp == null) return '';
+    try {
+      final dt = (timestamp as dynamic).toDate();
+      return '${dt.day} ${_month(dt.month)} ${dt.year}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _month(int m) {
+    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin',
+        'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+    return months[m - 1];
   }
 }
 
 class _OrderCard extends StatelessWidget {
-  final ClientOrder order;
+  final String ref;
+  final String productName;
+  final String farmName;
+  final double total;
+  final String date;
+  final String status;
+  final Color statusColor;
+  final bool canTrack;
+  final String orderId;
   final String Function(double) formatPrice;
 
-  const _OrderCard({required this.order, required this.formatPrice});
+  const _OrderCard({
+    required this.ref,
+    required this.productName,
+    required this.farmName,
+    required this.total,
+    required this.date,
+    required this.status,
+    required this.statusColor,
+    required this.canTrack,
+    required this.orderId,
+    required this.formatPrice,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -222,9 +248,8 @@ class _OrderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // En-tête
           Row(children: [
-            Text('#${order.ref}',
+            Text('#$ref',
                 style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 14,
@@ -235,20 +260,18 @@ class _OrderCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: order.statusColor.withOpacity(0.1),
+                color: statusColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(order.status,
+              child: Text(status,
                   style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: order.statusColor)),
+                      color: statusColor)),
             ),
           ]),
           const SizedBox(height: 10),
-
-          // Détails
           Row(children: [
             Container(
               width: 48,
@@ -257,36 +280,28 @@ class _OrderCard extends StatelessWidget {
                 color: AppColors.primary.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Center(
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  width: 36,
-                  height: 36,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.set_meal_rounded, color: AppColors.primary, size: 22),
-                ),
-              ),
+              child: const Icon(Icons.set_meal_rounded,
+                  color: AppColors.primary, size: 26),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(order.productName,
+                  Text(productName,
                       style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary)),
                   const SizedBox(height: 2),
-                  Text(order.farmName,
+                  Text(farmName,
                       style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 11,
                           color: AppColors.textSecondary)),
                   const SizedBox(height: 2),
-                  Text(order.date,
+                  Text(date,
                       style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 11,
@@ -294,22 +309,20 @@ class _OrderCard extends StatelessWidget {
                 ],
               ),
             ),
-            Text(formatPrice(order.total),
+            Text(formatPrice(total),
                 style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primary)),
           ]),
-
-          // Bouton suivi
-          if (order.canTrack) ...[
+          if (canTrack) ...[
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () => Get.to(
-                  () => const OrderTrackingScreen(),
+                  () => OrderTrackingScreen(orderId: orderId),
                   transition: Transition.rightToLeft,
                 ),
                 icon: const Icon(Icons.location_on_outlined,
@@ -327,6 +340,7 @@ class _OrderCard extends StatelessWidget {
     );
   }
 }
+
 
 class _FilterTab extends StatelessWidget {
   final String label;
@@ -347,8 +361,7 @@ class _FilterTab extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? color : Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -360,11 +373,8 @@ class _FilterTab extends StatelessWidget {
             style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 12,
-                fontWeight: isSelected
-                    ? FontWeight.w600
-                    : FontWeight.normal,
-                color:
-                    isSelected ? Colors.white : AppColors.textPrimary)),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected ? Colors.white : AppColors.textPrimary)),
       ),
     );
   }

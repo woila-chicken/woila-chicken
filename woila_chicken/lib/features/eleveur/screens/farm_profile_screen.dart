@@ -108,7 +108,7 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.15),
+                color: AppColors.success.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text('✓ Ferme vérifiée',

@@ -66,7 +66,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             onPressed: () {
               Get.snackbar(
                 'Partager',
-                '${widget.product.name} — ${widget.product.formattedPrice} · ${widget.product.farmName}',
+                '${widget.product.name} — ${widget.product.pricefcfa} · ${widget.product.farmName}',
                 backgroundColor: AppColors.primary,
                 colorText: Colors.white,
                 snackPosition: SnackPosition.BOTTOM,
@@ -181,7 +181,7 @@ class _ProductImage extends StatelessWidget {
           height: height,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.06),
+            color: AppColors.primary.withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(16),
           ),
           child: product.imageUrl != null
@@ -297,7 +297,7 @@ class _OrderPanel extends StatelessWidget {
         _InfoRow(
           icon: Icons.access_time_outlined,
           label: 'Disponibilité',
-          value: product.availabilityLabel,
+          value: product.availability,
         ),
         const SizedBox(height: 20),
         const Divider(),
@@ -579,7 +579,7 @@ class _LogisticOption extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color:
-              isSelected ? AppColors.primary.withOpacity(0.06) : Colors.white,
+              isSelected ? AppColors.primary.withValues(alpha: 0.06) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.divider,
@@ -630,12 +630,12 @@ class _QuantityButton extends StatelessWidget {
         height: 36,
         decoration: BoxDecoration(
           color: onTap != null
-              ? AppColors.primary.withOpacity(0.08)
+              ? AppColors.primary.withValues(alpha: 0.08)
               : AppColors.divider,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
               color: onTap != null
-                  ? AppColors.primary.withOpacity(0.3)
+                  ? AppColors.primary.withValues(alpha: 0.3)
                   : AppColors.divider),
         ),
         child: Icon(icon,

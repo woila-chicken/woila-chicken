@@ -3,54 +3,130 @@ import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/firestore_service.dart';
 
-class AdminSettingsScreen extends StatefulWidget {
+class AdminSettingsScreen extends StatelessWidget {
   const AdminSettingsScreen({super.key});
 
   @override
-  State<AdminSettingsScreen> createState() => _AdminSettingsScreenState();
-}
-
-class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
-  // ── Paramètres plateforme ─────────────────────────────────────
-  final _commissionCtrl = TextEditingController(text: '2');
-  final _deliveryFeeCtrl = TextEditingController(text: '500');
-  final _platformNameCtrl =
-      TextEditingController(text: 'Woïla Chicken');
-  final _contactEmailCtrl =
-      TextEditingController(text: 'contact@woilachicken.cm');
-  final _contactPhoneCtrl =
-      TextEditingController(text: '+237 6XX XXX XXX');
-  final _cityCtrl = TextEditingController(text: 'Garoua');
-
-  // ── Toggles ───────────────────────────────────────────────────
-  bool _notifNewOrder = true;
-  bool _notifNewFarm = true;
-  bool _notifDispute = true;
-  bool _maintenanceMode = false;
-  bool _allowNewRegistrations = true;
-  bool _requireSanitaryCert = false;
-
-  bool _editingPlatform = false;
-  bool _editingContact = false;
-
-  @override
   Widget build(BuildContext context) {
+    final firestore = Get.find<FirestoreService>();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Paramètres'),
         backgroundColor: AppColors.adminColor,
       ),
-      body: ResponsiveLayout(
-        desktop: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: _buildContent(isDesktop: true),
-          ),
-        ),
-        mobile: _buildContent(isDesktop: false),
+      body: StreamBuilder<Map<String, dynamic>>(
+        stream: firestore.getSettings(),
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(
+                  color: AppColors.primary),
+            );
+          }
+          final settings = snap.data ?? {};
+          return _SettingsBody(settings: settings);
+        },
       ),
+    );
+  }
+}
+
+class _SettingsBody extends StatefulWidget {
+  final Map<String, dynamic> settings;
+  const _SettingsBody({required this.settings});
+
+  @override
+  State<_SettingsBody> createState() => _SettingsBodyState();
+}
+
+class _SettingsBodyState extends State<_SettingsBody> {
+  late TextEditingController _commissionCtrl;
+  late TextEditingController _deliveryFeeCtrl;
+  late TextEditingController _platformNameCtrl;
+  late TextEditingController _contactEmailCtrl;
+  late TextEditingController _contactPhoneCtrl;
+  late TextEditingController _cityCtrl;
+
+  late bool _notifNewOrder;
+  late bool _notifNewFarm;
+  late bool _notifDispute;
+  late bool _maintenanceMode;
+  late bool _allowNewRegistrations;
+  late bool _requireSanitaryCert;
+
+  bool _editingPlatform = false;
+  bool _editingContact = false;
+  bool _isSaving = false;
+
+  final _firestore = Get.find<FirestoreService>();
+  final _auth = Get.find<AuthService>();
+
+  @override
+  void initState() {
+    super.initState();
+    _initFromSettings(widget.settings);
+  }
+
+  void _initFromSettings(Map<String, dynamic> s) {
+    _commissionCtrl = TextEditingController(
+        text: '${s['commissionRate'] ?? 2}');
+    _deliveryFeeCtrl = TextEditingController(
+        text: '${s['deliveryFee'] ?? 500}');
+    _platformNameCtrl = TextEditingController(
+        text: s['platformName'] ?? 'Woïla Chicken');
+    _contactEmailCtrl = TextEditingController(
+        text: s['contactEmail'] ?? '');
+    _contactPhoneCtrl = TextEditingController(
+        text: s['contactPhone'] ?? '');
+    _cityCtrl =
+        TextEditingController(text: s['city'] ?? 'Garoua');
+    _notifNewOrder = s['notifNewOrder'] ?? true;
+    _notifNewFarm = s['notifNewFarm'] ?? true;
+    _notifDispute = s['notifDispute'] ?? true;
+    _maintenanceMode = s['maintenanceMode'] ?? false;
+    _allowNewRegistrations = s['allowNewRegistrations'] ?? true;
+    _requireSanitaryCert = s['requireSanitaryCert'] ?? false;
+  }
+
+  Future<void> _save(Map<String, dynamic> patch) async {
+    setState(() => _isSaving = true);
+    try {
+      await _firestore.updateSettings(patch);
+      Get.snackbar(
+        'Enregistré',
+        'Paramètres mis à jour avec succès',
+        backgroundColor: AppColors.success,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Impossible d\'enregistrer les paramètres',
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ResponsiveLayout(
+      desktop: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: _buildContent(isDesktop: true),
+        ),
+      ),
+      mobile: _buildContent(isDesktop: false),
     );
   }
 
@@ -98,24 +174,39 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     );
   }
 
-  // ── Section paramètres plateforme ─────────────────────────────
+  // ── Plateforme ────────────────────────────────────────────────
   Widget _buildPlatformSection() {
     return _SettingsCard(
       title: 'Paramètres plateforme',
       icon: Icons.tune_outlined,
-      trailing: TextButton(
-        onPressed: () {
-          if (_editingPlatform) _savePlatform();
-          setState(() => _editingPlatform = !_editingPlatform);
-        },
-        child: Text(
-          _editingPlatform ? 'Enregistrer' : 'Modifier',
-          style: const TextStyle(
-              fontFamily: 'Poppins',
-              color: AppColors.primary,
-              fontWeight: FontWeight.w600),
-        ),
-      ),
+      trailing: _isSaving
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: AppColors.primary))
+          : TextButton(
+              onPressed: () async {
+                if (_editingPlatform) {
+                  await _save({
+                    'platformName': _platformNameCtrl.text.trim(),
+                    'commissionRate':
+                        double.tryParse(_commissionCtrl.text) ?? 2,
+                    'deliveryFee':
+                        double.tryParse(_deliveryFeeCtrl.text) ?? 500,
+                    'city': _cityCtrl.text.trim(),
+                  });
+                }
+                setState(() => _editingPlatform = !_editingPlatform);
+              },
+              child: Text(
+                _editingPlatform ? 'Enregistrer' : 'Modifier',
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600),
+              ),
+            ),
       child: Column(children: [
         _SettingsField(
           label: 'Nom de la plateforme',
@@ -129,12 +220,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           isEditing: _editingPlatform,
           keyboardType: TextInputType.number,
           suffix: '%',
-          helperText:
-              'Prélevé automatiquement sur chaque transaction',
+          helperText: 'Prélevé automatiquement sur chaque transaction',
         ),
         const SizedBox(height: 12),
         _SettingsField(
-          label: 'Frais de livraison fixe (FCFA)',
+          label: 'Frais de livraison (FCFA)',
           ctrl: _deliveryFeeCtrl,
           isEditing: _editingPlatform,
           keyboardType: TextInputType.number,
@@ -151,14 +241,19 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     );
   }
 
-  // ── Section contact ────────────────────────────────────────────
+  // ── Contact ───────────────────────────────────────────────────
   Widget _buildContactSection() {
     return _SettingsCard(
       title: 'Informations de contact',
       icon: Icons.contact_mail_outlined,
       trailing: TextButton(
-        onPressed: () {
-          if (_editingContact) _saveContact();
+        onPressed: () async {
+          if (_editingContact) {
+            await _save({
+              'contactEmail': _contactEmailCtrl.text.trim(),
+              'contactPhone': _contactPhoneCtrl.text.trim(),
+            });
+          }
           setState(() => _editingContact = !_editingContact);
         },
         child: Text(
@@ -187,7 +282,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     );
   }
 
-  // ── Section notifications ──────────────────────────────────────
+  // ── Notifications ─────────────────────────────────────────────
   Widget _buildNotifSection() {
     return _SettingsCard(
       title: 'Notifications admin',
@@ -197,27 +292,36 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           label: 'Nouvelle commande',
           sublabel: 'Recevoir une alerte à chaque nouvelle commande',
           value: _notifNewOrder,
-          onChanged: (v) => setState(() => _notifNewOrder = v),
+          onChanged: (v) async {
+            setState(() => _notifNewOrder = v);
+            await _save({'notifNewOrder': v});
+          },
         ),
         const Divider(height: 20),
         _ToggleRow(
           label: 'Nouvelle ferme inscrite',
           sublabel: 'Alerte quand une ferme demande à rejoindre',
           value: _notifNewFarm,
-          onChanged: (v) => setState(() => _notifNewFarm = v),
+          onChanged: (v) async {
+            setState(() => _notifNewFarm = v);
+            await _save({'notifNewFarm': v});
+          },
         ),
         const Divider(height: 20),
         _ToggleRow(
           label: 'Nouveau litige',
           sublabel: 'Alerte immédiate en cas de litige client',
           value: _notifDispute,
-          onChanged: (v) => setState(() => _notifDispute = v),
+          onChanged: (v) async {
+            setState(() => _notifDispute = v);
+            await _save({'notifDispute': v});
+          },
         ),
       ]),
     );
   }
 
-  // ── Section règles ────────────────────────────────────────────
+  // ── Règles ────────────────────────────────────────────────────
   Widget _buildRulesSection() {
     return _SettingsCard(
       title: 'Règles de la plateforme',
@@ -225,11 +329,12 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
       child: Column(children: [
         _ToggleRow(
           label: 'Nouvelles inscriptions',
-          sublabel:
-              'Autoriser de nouvelles fermes à s\'inscrire',
+          sublabel: 'Autoriser de nouvelles fermes à s\'inscrire',
           value: _allowNewRegistrations,
-          onChanged: (v) =>
-              setState(() => _allowNewRegistrations = v),
+          onChanged: (v) async {
+            setState(() => _allowNewRegistrations = v);
+            await _save({'allowNewRegistrations': v});
+          },
         ),
         const Divider(height: 20),
         _ToggleRow(
@@ -237,14 +342,16 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           sublabel:
               'Exiger la certification pour publier un produit',
           value: _requireSanitaryCert,
-          onChanged: (v) =>
-              setState(() => _requireSanitaryCert = v),
+          onChanged: (v) async {
+            setState(() => _requireSanitaryCert = v);
+            await _save({'requireSanitaryCert': v});
+          },
         ),
       ]),
     );
   }
 
-  // ── Section compte admin ───────────────────────────────────────
+  // ── Compte ────────────────────────────────────────────────────
   Widget _buildAccountSection() {
     return _SettingsCard(
       title: 'Compte administrateur',
@@ -272,7 +379,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     );
   }
 
-  // ── Section danger ────────────────────────────────────────────
+  // ── Zone danger ───────────────────────────────────────────────
   Widget _buildDangerSection() {
     return _SettingsCard(
       title: 'Zone de danger',
@@ -282,14 +389,14 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         _ToggleRow(
           label: 'Mode maintenance',
           sublabel:
-              'Suspendre l\'accès à la plateforme pour tous les utilisateurs',
+              'Suspendre l\'accès à la plateforme pour tous les utilisateurs. Les clients verront un écran de maintenance.',
           value: _maintenanceMode,
           activeColor: AppColors.error,
           onChanged: (v) {
             if (v) {
-              _confirmMaintenance(v);
+              _confirmMaintenance();
             } else {
-              setState(() => _maintenanceMode = false);
+              _disableMaintenance();
             }
           },
         ),
@@ -297,6 +404,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         _ActionRow(
           icon: Icons.delete_forever_outlined,
           label: 'Purger les données de test',
+          sublabel:
+              'Supprime les commandes abandonnées (+24h) créées pendant les tests',
           color: AppColors.error,
           onTap: () => _confirmPurge(),
         ),
@@ -305,44 +414,23 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   }
 
   // ── Dialogs ───────────────────────────────────────────────────
-  void _savePlatform() {
-    Get.snackbar(
-      'Paramètres enregistrés',
-      'Commission : ${_commissionCtrl.text}% · Livraison : ${_deliveryFeeCtrl.text} FCFA',
-      backgroundColor: AppColors.success,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.BOTTOM,
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-    );
-  }
-
-  void _saveContact() {
-    Get.snackbar(
-      'Contact mis à jour',
-      _contactEmailCtrl.text,
-      backgroundColor: AppColors.success,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.BOTTOM,
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-    );
-  }
-
-  void _confirmMaintenance(bool v) {
+  void _confirmMaintenance() {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16)),
-        title: const Text('Activer le mode maintenance ?',
+        title: const Text('Activer la maintenance ?',
             style: TextStyle(
                 fontFamily: 'Poppins',
                 fontWeight: FontWeight.w700)),
         content: const Text(
-            'Tous les utilisateurs seront déconnectés et la plateforme sera inaccessible jusqu\'à désactivation.',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-                color: AppColors.textSecondary)),
+          'Tous les clients et éleveurs verront un écran de maintenance et ne pourront plus utiliser l\'app. Seul l\'admin garde l\'accès.\n\nCette action est immédiate.',
+          style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 13,
+              color: AppColors.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -354,16 +442,10 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error),
-            onPressed: () {
-              setState(() => _maintenanceMode = true);
+            onPressed: () async {
               Navigator.pop(context);
-              Get.snackbar(
-                'Mode maintenance activé',
-                'La plateforme est maintenant inaccessible',
-                backgroundColor: AppColors.error,
-                colorText: Colors.white,
-                snackPosition: SnackPosition.BOTTOM,
-              );
+              setState(() => _maintenanceMode = true);
+              await _save({'maintenanceMode': true});
             },
             child: const Text('Activer',
                 style: TextStyle(fontFamily: 'Poppins')),
@@ -373,22 +455,35 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     );
   }
 
+  void _disableMaintenance() async {
+    setState(() => _maintenanceMode = false);
+    await _save({'maintenanceMode': false});
+    Get.snackbar(
+      'Maintenance désactivée',
+      'La plateforme est de nouveau accessible',
+      backgroundColor: AppColors.success,
+      colorText: Colors.white,
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
   void _confirmPurge() {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16)),
-        title: const Text('Purger les données ?',
+        title: const Text('Purger les données de test ?',
             style: TextStyle(
                 fontFamily: 'Poppins',
                 fontWeight: FontWeight.w700)),
         content: const Text(
-            'Toutes les données de test seront supprimées définitivement. Cette action est irréversible.',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-                color: AppColors.textSecondary)),
+          'Les commandes abandonnées depuis plus de 24h (status "en attente") seront supprimées définitivement.\n\nCette action est irréversible.',
+          style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 13,
+              color: AppColors.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -400,15 +495,26 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              Get.snackbar(
-                'Données purgées',
-                'Les données de test ont été supprimées',
-                backgroundColor: AppColors.error,
-                colorText: Colors.white,
-                snackPosition: SnackPosition.BOTTOM,
-              );
+              try {
+                await _firestore.purgeTestData();
+                Get.snackbar(
+                  'Données purgées',
+                  'Les commandes de test ont été supprimées',
+                  backgroundColor: AppColors.success,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              } catch (e) {
+                Get.snackbar(
+                  'Erreur',
+                  'Impossible de purger les données',
+                  backgroundColor: AppColors.error,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              }
             },
             child: const Text('Purger',
                 style: TextStyle(fontFamily: 'Poppins')),
@@ -457,15 +563,47 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                     color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Get.snackbar(
-                'Mot de passe modifié',
-                'Votre nouveau mot de passe est actif',
-                backgroundColor: AppColors.success,
-                colorText: Colors.white,
-                snackPosition: SnackPosition.BOTTOM,
-              );
+            onPressed: () async {
+              if (newCtrl.text != confirmCtrl.text) {
+                Get.snackbar(
+                  'Erreur',
+                  'Les mots de passe ne correspondent pas',
+                  backgroundColor: AppColors.error,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+                return;
+              }
+              if (newCtrl.text.length < 6) {
+                Get.snackbar(
+                  'Erreur',
+                  'Minimum 6 caractères',
+                  backgroundColor: AppColors.error,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+                return;
+              }
+              try {
+                await _auth.currentUser.value
+                    ?.updatePassword(newCtrl.text);
+                Navigator.pop(context);
+                Get.snackbar(
+                  'Mot de passe modifié',
+                  'Votre nouveau mot de passe est actif',
+                  backgroundColor: AppColors.success,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              } catch (e) {
+                Get.snackbar(
+                  'Erreur',
+                  'Reconnectez-vous avant de changer le mot de passe',
+                  backgroundColor: AppColors.error,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              }
             },
             child: const Text('Confirmer',
                 style: TextStyle(fontFamily: 'Poppins')),
@@ -476,6 +614,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   }
 
   void _showActivityLog() {
+    // Journal depuis Firestore — les notifications stockées
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -513,41 +652,75 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
             ]),
           ),
           Expanded(
-            child: ListView(
-              controller: ctrl,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: const [
-                _LogItem(
-                  action: 'Ferme Sadou validée',
-                  time: 'Aujourd\'hui · 10:32',
-                  icon: Icons.verified_outlined,
-                  color: AppColors.success,
-                ),
-                _LogItem(
-                  action: 'Litige #WC-1035 résolu',
-                  time: 'Aujourd\'hui · 09:15',
-                  icon: Icons.gavel_outlined,
-                  color: AppColors.primary,
-                ),
-                _LogItem(
-                  action: 'Commission modifiée : 1.5% → 2%',
-                  time: 'Hier · 16:44',
-                  icon: Icons.tune_outlined,
-                  color: AppColors.warning,
-                ),
-                _LogItem(
-                  action: 'Ferme Alhadji suspendue',
-                  time: 'Hier · 11:20',
-                  icon: Icons.block_outlined,
-                  color: AppColors.error,
-                ),
-                _LogItem(
-                  action: 'Connexion admin',
-                  time: '8 mai · 08:05',
-                  icon: Icons.login_outlined,
-                  color: AppColors.textSecondary,
-                ),
-              ],
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: Get.find<FirestoreService>()
+                  .getAllOrders()
+                  .map((orders) => orders.take(10).toList()),
+              builder: (context, snap) {
+                final orders = snap.data ?? [];
+                if (orders.isEmpty) {
+                  return const Center(
+                    child: Text('Aucune activité récente',
+                        style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 13,
+                            color: AppColors.textSecondary)),
+                  );
+                }
+                return ListView.builder(
+                  controller: ctrl,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: orders.length,
+                  itemBuilder: (_, i) {
+                    final o = orders[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary
+                                .withOpacity(0.1),
+                            borderRadius:
+                                BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                              Icons.receipt_long_outlined,
+                              size: 18,
+                              color: AppColors.primary),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Commande #${o['ref'] ?? ''} — ${o['farmName'] ?? ''}',
+                                style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary),
+                              ),
+                              Text(
+                                '${o['clientName'] ?? ''} · ${o['total'] ?? 0} FCFA',
+                                style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 11,
+                                    color:
+                                        AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ]),
+                    );
+                  },
+                );
+              },
             ),
           ),
         ]),
@@ -584,7 +757,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 backgroundColor: AppColors.error),
             onPressed: () {
               Navigator.pop(context);
-              Get.offAllNamed(AppRoutes.login);
+              _auth.logout();
             },
             child: const Text('Déconnecter',
                 style: TextStyle(fontFamily: 'Poppins')),
@@ -595,9 +768,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  Widgets réutilisables
-// ─────────────────────────────────────────────────────────────────
+// ─── Widgets réutilisables ────────────────────────────────────────
 class _SettingsCard extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -777,6 +948,7 @@ class _ToggleRow extends StatelessWidget {
 class _ActionRow extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? sublabel;
   final VoidCallback onTap;
   final Color color;
 
@@ -784,6 +956,7 @@ class _ActionRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.sublabel,
     this.color = AppColors.textPrimary,
   });
 
@@ -798,11 +971,24 @@ class _ActionRow extends StatelessWidget {
           Icon(icon, size: 20, color: color),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(label,
-                style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 13,
-                    color: color)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        color: color)),
+                if (sublabel != null) ...[
+                  const SizedBox(height: 2),
+                  Text(sublabel!,
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          color: AppColors.textSecondary)),
+                ],
+              ],
+            ),
           ),
           Icon(Icons.chevron_right,
               size: 18, color: color.withOpacity(0.5)),
@@ -841,57 +1027,6 @@ class _DialogField extends StatelessWidget {
           decoration: InputDecoration(hintText: label),
         ),
       ],
-    );
-  }
-}
-
-class _LogItem extends StatelessWidget {
-  final String action;
-  final String time;
-  final IconData icon;
-  final Color color;
-
-  const _LogItem({
-    required this.action,
-    required this.time,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: 18, color: color),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(action,
-                  style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary)),
-              Text(time,
-                  style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 11,
-                      color: AppColors.textSecondary)),
-            ],
-          ),
-        ),
-      ]),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../../../core/models/product.dart';
+import '../../../core/services/firestore_service.dart';
 
 enum SortOption { prixCroissant, prixDecroissant, poidsAsc, noteDesc }
 
@@ -9,27 +10,40 @@ enum PriceFilter { all, cheap, mid, expensive }
 
 enum DeliveryFilter { all, delivery, pickup }
 
-class CatalogueController extends GetxController {
-  // ── Recherche ─────────────────────────────────────────────────
-  final searchQuery = ''.obs;
 
-  // ── Filtres ───────────────────────────────────────────────────
+class CatalogueController extends GetxController {
+  final _firestore = Get.find<FirestoreService>();
+
+  final products = <Product>[].obs;
+  final isLoading = true.obs;
+  final searchQuery = ''.obs;
   final selectedFarm = 'Toutes'.obs;
   final weightFilter = WeightFilter.all.obs;
   final priceFilter = PriceFilter.all.obs;
   final deliveryFilter = DeliveryFilter.all.obs;
   final sortOption = SortOption.noteDesc.obs;
 
-  // ── Liste des fermes disponibles ──────────────────────────────
+  @override
+  void onInit() {
+    super.onInit();
+    _loadProducts();
+  }
+
+  void _loadProducts() {
+    isLoading.value = true;
+    _firestore.getProducts().listen((list) {
+      products.value = list;
+      isLoading.value = false;
+    });
+  }
+
   List<String> get farms => [
         'Toutes',
-        ...mockProducts.map((p) => p.farmName).toSet().toList()..sort(),
+        ...products.map((p) => p.farmName).toSet().toList()..sort(),
       ];
 
-  // ── Produits filtrés + triés ──────────────────────────────────
   List<Product> get filteredProducts {
-    var list = mockProducts.where((p) {
-      // Recherche texte
+    var list = products.where((p) {
       if (searchQuery.value.isNotEmpty) {
         final q = searchQuery.value.toLowerCase();
         if (!p.name.toLowerCase().contains(q) &&
@@ -37,14 +51,10 @@ class CatalogueController extends GetxController {
           return false;
         }
       }
-
-      // Filtre ferme
       if (selectedFarm.value != 'Toutes' &&
           p.farmName != selectedFarm.value) {
         return false;
       }
-
-      // Filtre poids
       switch (weightFilter.value) {
         case WeightFilter.light:
           if (p.weightKg >= 2.0) return false;
@@ -58,8 +68,6 @@ class CatalogueController extends GetxController {
         default:
           break;
       }
-
-      // Filtre prix
       switch (priceFilter.value) {
         case PriceFilter.cheap:
           if (p.pricefcfa >= 3000) return false;
@@ -73,8 +81,6 @@ class CatalogueController extends GetxController {
         default:
           break;
       }
-
-      // Filtre livraison
       switch (deliveryFilter.value) {
         case DeliveryFilter.delivery:
           if (!p.deliveryAvailable) return false;
@@ -85,11 +91,9 @@ class CatalogueController extends GetxController {
         default:
           break;
       }
-
       return true;
     }).toList();
 
-    // Tri
     switch (sortOption.value) {
       case SortOption.prixCroissant:
         list.sort((a, b) => a.pricefcfa.compareTo(b.pricefcfa));
@@ -104,13 +108,11 @@ class CatalogueController extends GetxController {
         list.sort((a, b) => b.farmRating.compareTo(a.farmRating));
         break;
     }
-
     return list;
   }
 
-  // ── Méthodes de mise à jour ───────────────────────────────────
   void setSearch(String q) => searchQuery.value = q;
-  void setFarm(String farm) => selectedFarm.value = farm;
+  void setFarm(String f) => selectedFarm.value = f;
   void setWeight(WeightFilter f) => weightFilter.value = f;
   void setPrice(PriceFilter f) => priceFilter.value = f;
   void setDelivery(DeliveryFilter f) => deliveryFilter.value = f;

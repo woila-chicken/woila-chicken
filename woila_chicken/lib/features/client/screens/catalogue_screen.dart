@@ -98,7 +98,7 @@ class _MobileCatalogue extends StatelessWidget {
                     icon: const Icon(Icons.filter_alt),
                     onPressed: () => _showFiltersSheet(context),
                     style: IconButton.styleFrom(
-                        backgroundColor: AppColors.accent.withOpacity(0.2)),
+                        backgroundColor: AppColors.accent.withValues(alpha: 0.2)),
                   ),
                 )
               : IconButton(
@@ -149,8 +149,7 @@ class _MobileCatalogue extends StatelessWidget {
           }),
           const Expanded(child: _ProductsGrid(crossAxisCount: 2)),
         ],
-      ),
-    );
+    ));
   }
 
   void _showFiltersSheet(BuildContext context) {
@@ -423,14 +422,19 @@ class _ProductsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctrl = Get.find<CatalogueController>();
     return Obx(() {
-      final products = ctrl.filteredProducts;
-      if (products.isEmpty) {
+  if (ctrl.isLoading.value) {
+    return const Center(
+      child: CircularProgressIndicator(color: AppColors.primary),
+    );
+  }
+  final products = ctrl.filteredProducts;
+  if (products.isEmpty) {
         return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.search_off,
-                  size: 64, color: AppColors.textSecondary.withOpacity(0.4)),
+                  size: 64, color: AppColors.textSecondary.withValues(alpha: 0.4)),
               const SizedBox(height: 16),
               const Text('Aucun produit trouvé',
                   style: TextStyle(
@@ -485,7 +489,7 @@ class _ProductCard extends StatelessWidget {
           border: Border.all(color: AppColors.divider),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2))
           ],
@@ -499,7 +503,7 @@ class _ProductCard extends StatelessWidget {
                 Container(
                   height: 110,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.06),
+                    color: AppColors.primary.withValues(alpha: 0.06),
                     borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(14)),
                   ),
@@ -539,9 +543,9 @@ class _ProductCard extends StatelessWidget {
                         color: AppColors.success,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Row(
+                      child: const Row(
   mainAxisSize: MainAxisSize.min,
-  children: const [
+  children: [
     Icon(Icons.verified_rounded, size: 10, color: Colors.white),
     SizedBox(width: 3),
     Text('Certifié',
@@ -596,7 +600,7 @@ class _ProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    product.formattedPrice,
+                    product.pricefcfa as String,
                     style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 14,
@@ -721,10 +725,10 @@ class _ActiveChip extends StatelessWidget {
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
         border:
-            Border.all(color: AppColors.primary.withOpacity(0.3)),
+            Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

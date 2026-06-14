@@ -107,7 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 13,
-                  color: Colors.white.withOpacity(0.75)),
+                  color: Colors.white.withValues(alpha: 0.75)),
             ),
           ]),
         ),
@@ -152,11 +152,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: 'Mon activité',
           icon: Icons.bar_chart_outlined,
           child: Row(children: [
-            _StatBlock(value: '4', label: 'Commandes'),
+            const _StatBlock(value: '4', label: 'Commandes'),
             _Divider(),
-            _StatBlock(value: '23 800', label: 'FCFA dépensés'),
+            const _StatBlock(value: '23 800', label: 'FCFA dépensés'),
             _Divider(),
-            _StatBlock(value: '3', label: 'Fermes notées'),
+            const _StatBlock(value: '3', label: 'Fermes notées'),
           ]),
         ),
         const SizedBox(height: 16),
@@ -176,10 +176,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const Divider(height: 1),
-            _SettingRow(
+            const _SettingRow(
               icon: Icons.language_outlined,
               label: 'Langue',
-              trailing: const Text('Français',
+              trailing: Text('Français',
                   style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 13,

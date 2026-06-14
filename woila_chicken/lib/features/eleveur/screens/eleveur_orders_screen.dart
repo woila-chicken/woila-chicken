@@ -1,274 +1,333 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/responsive_layout.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/firestore_service.dart';
+import '../../../core/services/notification_service.dart';
 
-enum OrderStatus { enAttente, confirmee, livree, terminee, refusee }
-
-class EleveurOrder {
-  final String ref;
-  final String clientName;
-  final String product;
-  final int quantity;
-  final double total;
-  final bool isDelivery;
-  final String date;
-  OrderStatus status;
-
-  EleveurOrder({
-    required this.ref,
-    required this.clientName,
-    required this.product,
-    required this.quantity,
-    required this.total,
-    required this.isDelivery,
-    required this.date,
-    required this.status,
-  });
-}
-
-class EleveurOrdersController extends GetxController {
-  final orders = <EleveurOrder>[
-    EleveurOrder(ref: 'WC-1043', clientName: 'Amadou Diallo',
-        product: 'Poulet fermier 2kg', quantity: 2, total: 7000,
-        isDelivery: true, date: '10 mai', status: OrderStatus.enAttente),
-    EleveurOrder(ref: 'WC-1042', clientName: 'Fatoumata Bah',
-        product: 'Poulet local 1.8kg', quantity: 1, total: 2800,
-        isDelivery: false, date: '9 mai', status: OrderStatus.enAttente),
-    EleveurOrder(ref: 'WC-1041', clientName: 'Ibrahim Sow',
-        product: 'Gros poulet 2.5kg', quantity: 1, total: 4200,
-        isDelivery: true, date: '8 mai', status: OrderStatus.confirmee),
-    EleveurOrder(ref: 'WC-1040', clientName: 'Mariama Koné',
-        product: 'Poulet fermier 2kg', quantity: 3, total: 10500,
-        isDelivery: false, date: '7 mai', status: OrderStatus.terminee),
-  ].obs;
-
-  int get pendingCount =>
-      orders.where((o) => o.status == OrderStatus.enAttente).length;
-
-  void confirm(String ref) {
-    final o = orders.firstWhere((o) => o.ref == ref);
-    o.status = OrderStatus.confirmee;
-    orders.refresh();
-  }
-
-  void markDelivered(String ref) {
-    final o = orders.firstWhere((o) => o.ref == ref);
-    o.status = OrderStatus.livree;
-    orders.refresh();
-  }
-
-  void refuse(String ref) {
-    final o = orders.firstWhere((o) => o.ref == ref);
-    o.status = OrderStatus.refusee;
-    orders.refresh();
-  }
-}
-
-class EleveurOrdersScreen extends StatelessWidget {
+class EleveurOrdersScreen extends StatefulWidget {
   const EleveurOrdersScreen({super.key});
 
   @override
+  State<EleveurOrdersScreen> createState() =>
+      _EleveurOrdersScreenState();
+}
+
+class _EleveurOrdersScreenState
+    extends State<EleveurOrdersScreen> {
+  final _auth = Get.find<AuthService>();
+  final _firestore = Get.find<FirestoreService>();
+  final _notif = Get.find<NotificationService>();
+  String? _farmId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFarmId();
+  }
+
+  Future<void> _loadFarmId() async {
+    final farm =
+        await _firestore.getFarmByOwner(_auth.uid);
+    if (farm != null) {
+      setState(() => _farmId = farm['id']);
+    }
+  }
+
+  Future<void> _confirmOrder(
+      Map<String, dynamic> order) async {
+    await _firestore.updateOrderStatus(
+        order['id'], 'confirmed');
+    await _notif.notifyOrderConfirmed(
+      clientId: order['clientId'],
+      orderRef: order['ref'],
+      farmName: order['farmName'],
+    );
+  }
+
+  Future<void> _markDelivered(
+      Map<String, dynamic> order) async {
+    await _firestore.updateOrderStatus(
+        order['id'], 'delivered');
+    await _notif.notifyOrderDelivered(
+      clientId: order['clientId'],
+      orderRef: order['ref'],
+    );
+  }
+
+  Future<void> _refuseOrder(
+      Map<String, dynamic> order) async {
+    await _firestore.updateOrderStatus(
+        order['id'], 'disputed');
+    // Remettre le stock
+    await FirebaseFirestore.instance
+        .collection('products')
+        .doc(order['productId'])
+        .update({
+      'quantity': FieldValue.increment(
+          order['quantity'] as int? ?? 1),
+    });
+  }
+
+  String _statusLabel(String s) {
+    switch (s) {
+      case 'pending':   return 'En attente';
+      case 'confirmed': return 'Confirmée';
+      case 'inRoute':   return 'En route';
+      case 'delivered': return 'Livrée';
+      case 'completed': return 'Terminée';
+      case 'disputed':  return 'Refusée';
+      default:          return s;
+    }
+  }
+
+  Color _statusColor(String s) {
+    switch (s) {
+      case 'pending':   return AppColors.warning;
+      case 'confirmed': return AppColors.success;
+      case 'delivered': return AppColors.primary;
+      case 'completed': return AppColors.textSecondary;
+      case 'disputed':  return AppColors.error;
+      default:          return AppColors.textSecondary;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final ctrl = Get.put(EleveurOrdersController());
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Commandes reçues'),
         backgroundColor: AppColors.accent,
         foregroundColor: const Color(0xFF412402),
-        actions: [
-          Obx(() => ctrl.pendingCount > 0
-              ? Container(
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text('${ctrl.pendingCount} nouvelles',
-                      style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white)),
-                )
-              : const SizedBox.shrink()),
-        ],
       ),
-      body: ResponsiveLayout(
-        desktop: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: _buildList(context, ctrl),
-          ),
-        ),
-        mobile: _buildList(context, ctrl),
-      ),
+      body: _farmId == null
+          ? const Center(
+              child: CircularProgressIndicator(
+                  color: AppColors.accent))
+          : ResponsiveLayout(
+              desktop: Center(
+                child: ConstrainedBox(
+                  constraints:
+                      const BoxConstraints(maxWidth: 800),
+                  child: _buildList(),
+                ),
+              ),
+              mobile: _buildList(),
+            ),
     );
   }
 
-  Widget _buildList(BuildContext context, EleveurOrdersController ctrl) {
-    return Obx(() => ListView.separated(
+  Widget _buildList() {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _firestore.getFarmOrders(_farmId!),
+      builder: (context, snap) {
+        if (snap.connectionState ==
+            ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+                color: AppColors.accent),
+          );
+        }
+        final orders = snap.data ?? [];
+        if (orders.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.receipt_long_outlined,
+                    size: 64,
+                    color: AppColors.textSecondary
+                        .withOpacity(0.3)),
+                const SizedBox(height: 12),
+                const Text('Aucune commande reçue',
+                    style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 15,
+                        color: AppColors.textSecondary)),
+              ],
+            ),
+          );
+        }
+
+        return ListView.separated(
           padding: const EdgeInsets.all(16),
-          itemCount: ctrl.orders.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (_, i) =>
-              _OrderCard(order: ctrl.orders[i], ctrl: ctrl),
-        ));
+          itemCount: orders.length,
+          separatorBuilder: (_, __) =>
+              const SizedBox(height: 10),
+          itemBuilder: (_, i) {
+            final order = orders[i];
+            final status = order['status'] ?? 'pending';
+            return _EleveurOrderCard(
+              order: order,
+              statusLabel: _statusLabel(status),
+              statusColor: _statusColor(status),
+              onConfirm: status == 'pending'
+                  ? () => _confirmOrder(order)
+                  : null,
+              onDeliver: status == 'confirmed'
+                  ? () => _markDelivered(order)
+                  : null,
+              onRefuse: status == 'pending'
+                  ? () => _refuseOrder(order)
+                  : null,
+            );
+          },
+        );
+      },
+    );
   }
 }
 
-class _OrderCard extends StatelessWidget {
-  final EleveurOrder order;
-  final EleveurOrdersController ctrl;
+class _EleveurOrderCard extends StatelessWidget {
+  final Map<String, dynamic> order;
+  final String statusLabel;
+  final Color statusColor;
+  final VoidCallback? onConfirm;
+  final VoidCallback? onDeliver;
+  final VoidCallback? onRefuse;
 
-  const _OrderCard({required this.order, required this.ctrl});
+  const _EleveurOrderCard({
+    required this.order,
+    required this.statusLabel,
+    required this.statusColor,
+    this.onConfirm,
+    this.onDeliver,
+    this.onRefuse,
+  });
 
-  Color get _statusColor {
-    switch (order.status) {
-      case OrderStatus.enAttente: return AppColors.warning;
-      case OrderStatus.confirmee: return AppColors.success;
-      case OrderStatus.livree:    return AppColors.primary;
-      case OrderStatus.terminee:  return AppColors.textSecondary;
-      case OrderStatus.refusee:   return AppColors.error;
-    }
-  }
-
-  String get _statusLabel {
-    switch (order.status) {
-      case OrderStatus.enAttente: return 'En attente';
-      case OrderStatus.confirmee: return 'Confirmée';
-      case OrderStatus.livree:    return 'Livrée';
-      case OrderStatus.terminee:  return 'Terminée';
-      case OrderStatus.refusee:   return 'Refusée';
-    }
-  }
+  String _formatPrice(double p) =>
+      '${p.toStringAsFixed(0).replaceAllMapped(
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+            (m) => '${m[1]} ',
+          )} FCFA';
 
   @override
   Widget build(BuildContext context) {
-    final isNew = order.status == OrderStatus.enAttente;
-    final isConfirmed = order.status == OrderStatus.confirmee;
-
+    final total =
+        (order['total'] as num?)?.toDouble() ?? 0;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isNew
+          color: onConfirm != null
               ? AppColors.warning.withOpacity(0.5)
               : AppColors.divider,
-          width: isNew ? 1.5 : 1,
+          width: onConfirm != null ? 1.5 : 1,
         ),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // En-tête
-        Row(children: [
-          Text('#${order.ref}',
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary)),
-          const Spacer(),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(_statusLabel,
-                style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: _statusColor)),
-          ),
-        ]),
-        const SizedBox(height: 10),
-
-        // Détails
-        _DetailRow(icon: Icons.person_outline, text: order.clientName),
-        const SizedBox(height: 4),
-        _DetailRow(
-            icon: Icons.inventory_2_outlined,
-            text: '${order.product} × ${order.quantity}'),
-        const SizedBox(height: 4),
-        _DetailRow(
-            icon: order.isDelivery
-                ? Icons.local_shipping_outlined
-                : Icons.store_outlined,
-            text: order.isDelivery ? 'Livraison à domicile' : 'Retrait à la ferme'),
-        const SizedBox(height: 4),
-        _DetailRow(icon: Icons.calendar_today_outlined, text: order.date),
-        const SizedBox(height: 10),
-
-        // Total
-        Row(children: [
-          const Text('Total :',
-              style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  color: AppColors.textSecondary)),
-          const SizedBox(width: 6),
-          Text('${order.total.toInt()} FCFA',
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary)),
-        ]),
-
-        // Actions
-        if (isNew) ...[
-          const SizedBox(height: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(children: [
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () => ctrl.confirm(order.ref),
-                child: const Text('✓ Confirmer',
-                    style: TextStyle(fontFamily: 'Poppins')),
+            Text('#${order['ref'] ?? ''}',
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => ctrl.refuse(order.ref),
-                style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error)),
-                child: const Text('✗ Refuser',
-                    style: TextStyle(fontFamily: 'Poppins')),
-              ),
+              child: Text(statusLabel,
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor)),
             ),
           ]),
-        ],
-        if (isConfirmed) ...[
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => ctrl.markDelivered(order.ref),
-              icon: const Icon(Icons.check_circle_outline, size: 18),
-              label: const Text('Marquer comme livré',
-                  style: TextStyle(fontFamily: 'Poppins')),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success),
-            ),
+          const SizedBox(height: 10),
+          _Row(icon: Icons.person_outline,
+              text: order['clientName'] ?? ''),
+          const SizedBox(height: 4),
+          _Row(icon: Icons.inventory_2_outlined,
+              text: '${order['productName'] ?? ''} × ${order['quantity'] ?? 1}'),
+          const SizedBox(height: 4),
+          _Row(
+            icon: (order['isDelivery'] as bool? ?? true)
+                ? Icons.local_shipping_outlined
+                : Icons.storefront_outlined,
+            text: (order['isDelivery'] as bool? ?? true)
+                ? 'Livraison à domicile'
+                : 'Retrait à la ferme',
           ),
+          const SizedBox(height: 10),
+          Row(children: [
+            const Text('Total :',
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    color: AppColors.textSecondary)),
+            const SizedBox(width: 6),
+            Text(_formatPrice(total),
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary)),
+          ]),
+          if (onConfirm != null || onRefuse != null) ...[
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: onConfirm,
+                  child: const Text('Confirmer',
+                      style:
+                          TextStyle(fontFamily: 'Poppins')),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onRefuse,
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(
+                          color: AppColors.error)),
+                  child: const Text('Refuser',
+                      style:
+                          TextStyle(fontFamily: 'Poppins')),
+                ),
+              ),
+            ]),
+          ],
+          if (onDeliver != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onDeliver,
+                icon: const Icon(
+                    Icons.check_circle_outline, size: 18),
+                label: const Text('Marquer comme livré',
+                    style:
+                        TextStyle(fontFamily: 'Poppins')),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success),
+              ),
+            ),
+          ],
         ],
-      ]),
+      ),
     );
   }
 }
 
-class _DetailRow extends StatelessWidget {
+class _Row extends StatelessWidget {
   final IconData icon;
   final String text;
-  const _DetailRow({required this.icon, required this.text});
+  const _Row({required this.icon, required this.text});
 
   @override
   Widget build(BuildContext context) {

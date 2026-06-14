@@ -4,6 +4,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/models/product.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import 'order_confirmation_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/firestore_service.dart';
 
 enum MobileOperator { orange, mtn }
 
@@ -56,12 +59,44 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
-  Future<void> _pay() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _isProcessing = true);
+Future<void> _pay() async {
+  if (!_formKey.currentState!.validate()) return;
+  setState(() => _isProcessing = true);
 
-    // Simulation du délai de traitement Mobile Money
-    await Future.delayed(const Duration(seconds: 2));
+  try {
+    final auth = Get.find<AuthService>();
+    final firestore = Get.find<FirestoreService>();
+
+    // Créer la commande dans Firestore
+    final orderId = await firestore.createOrder({
+      'clientId': auth.uid,
+      'clientName': _nameCtrl.text.trim(),
+      'farmId': widget.product.farmId ?? '',
+      'farmName': widget.product.farmName,
+      'productId': widget.product.id,
+      'productName':
+          '${widget.product.name} ${widget.product.weightKg}kg',
+      'quantity': widget.quantity,
+      'priceFcfa': widget.product.pricefcfa,
+      'deliveryFee': _deliveryFee,
+      'total': _total,
+      'isDelivery': widget.wantsDelivery,
+      'address':
+          '${_quartierCtrl.text}, ${_villeCtrl.text}',
+      'phone': _phoneCtrl.text.trim(),
+      'operator': _operator == MobileOperator.orange
+          ? 'orange'
+          : 'mtn',
+      'momoNumber': _momoCtrl.text.trim(),
+    });
+
+    // Décrémenter le stock
+    await FirebaseFirestore.instance
+        .collection('products')
+        .doc(widget.product.id)
+        .update({
+      'quantity': FieldValue.increment(-widget.quantity),
+    });
 
     setState(() => _isProcessing = false);
 
@@ -71,10 +106,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           quantity: widget.quantity,
           total: _total,
           wantsDelivery: widget.wantsDelivery,
-          orderRef: 'WC-${DateTime.now().millisecondsSinceEpoch % 10000}',
+          orderRef: orderId, // ← vrai ID Firestore
         ));
-  }
 
+  } catch (e) {
+    setState(() => _isProcessing = false);
+    Get.snackbar(
+      'Erreur',
+      'Impossible de passer la commande. Réessayez.',
+      backgroundColor: AppColors.error,
+      colorText: Colors.white,
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+}
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -214,7 +260,7 @@ class _AddressSection extends StatelessWidget {
           ),
         ]),
         const SizedBox(height: 12),
-        _CheckoutField(
+        const _CheckoutField(
           label: 'Indication (optionnel)',
           hint: 'Près de la mosquée, couleur de la maison...',
           maxLines: 2,
@@ -290,11 +336,11 @@ class _PaymentSection extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary)),
           const SizedBox(height: 10),
-          _StepRow(num: '1', text: 'Entrez votre numéro et appuyez sur Payer'),
+          const _StepRow(num: '1', text: 'Entrez votre numéro et appuyez sur Payer'),
           const SizedBox(height: 6),
-          _StepRow(num: '2', text: 'Vous recevrez une notification sur votre téléphone'),
+          const _StepRow(num: '2', text: 'Vous recevrez une notification sur votre téléphone'),
           const SizedBox(height: 6),
-          _StepRow(num: '3', text: 'Validez le paiement avec votre code PIN'),
+          const _StepRow(num: '3', text: 'Validez le paiement avec votre code PIN'),
         ],
       ),
     );
@@ -322,7 +368,7 @@ class _OperatorCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.08) : Colors.white,
+          color: isSelected ? color.withValues(alpha: 0.08) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? color : AppColors.divider,
@@ -364,7 +410,7 @@ class _StepRow extends StatelessWidget {
         Container(
           width: 22,
           height: 22,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
           ),
@@ -478,15 +524,15 @@ class _EscrowBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.success.withOpacity(0.08),
+        color: AppColors.success.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success.withOpacity(0.3)),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
       ),
-      child: Row(
+      child: const Row(
         children: [
-          const Icon(Icons.shield_outlined, color: AppColors.success, size: 22),
-          const SizedBox(width: 10),
-          const Expanded(
+          Icon(Icons.shield_outlined, color: AppColors.success, size: 22),
+          SizedBox(width: 10),
+          Expanded(
             child: Text(
               'Paiement sécurisé — votre argent est libéré à l\'éleveur uniquement après votre confirmation de réception.',
               style: TextStyle(

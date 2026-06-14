@@ -235,9 +235,9 @@ class _EleveurDashboardBody extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.accent.withOpacity(0.12),
+            color: AppColors.accent.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.accent.withOpacity(0.4)),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.4)),
           ),
           child: Row(
             children: [
@@ -265,7 +265,7 @@ class _EleveurDashboardBody extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 3),
                       decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.12),
+                        color: AppColors.success.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Text(
@@ -343,9 +343,9 @@ class _EleveurDashboardBody extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppColors.warning.withOpacity(0.1),
+            color: AppColors.warning.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+            border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
           ),
           child: Row(
             children: [
@@ -452,7 +452,7 @@ class _OrderRow extends StatelessWidget {
             padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: _statusColor.withOpacity(0.1),
+              color: _statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -478,7 +478,7 @@ class _EleveurTopBar extends StatelessWidget {
       color: Colors.white,
       child: Row(
         children: [
-          Text('Bonjour, Bougué 👋',
+          Text('Bonjour, Bougué !',
               style: Theme.of(context).textTheme.headlineMedium),
           const Spacer(),
           IconButton(
@@ -517,7 +517,7 @@ class _EleveurSidebarItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
           color:
-              isSelected ? AppColors.accent.withOpacity(0.15) : null,
+              isSelected ? AppColors.accent.withValues(alpha: 0.15) : null,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(

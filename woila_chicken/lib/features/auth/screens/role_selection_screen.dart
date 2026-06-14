@@ -10,6 +10,8 @@ class RoleSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final args = Get.arguments as Map<String, dynamic>?;
+    final isAdmin = args?['isAdmin'] ?? false;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: ResponsiveLayout(
@@ -36,7 +38,7 @@ class RoleSelectionScreen extends StatelessWidget {
                               color: Colors.white,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                  color: AppColors.accent.withOpacity(0.5),
+                                  color: AppColors.accent.withValues(alpha: 0.5),
                                   width: 2),
                             ),
                             child: ClipOval(
@@ -77,7 +79,7 @@ class RoleSelectionScreen extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 14,
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                             height: 1.6,
                           ),
                         ),
@@ -135,12 +137,13 @@ class RoleSelectionScreen extends StatelessWidget {
                           onTap: () => Get.offAllNamed(AppRoutes.eleveurHome),
                         ),
                         const SizedBox(height: 12),
-                        _RoleCard(
-                          icon: Icons.analytics_rounded,
-                          role: UserRole.admin,
-                          color: AppColors.adminColor,
-                          onTap: () => Get.offAllNamed(AppRoutes.adminHome),
-                        ),
+                        if (isAdmin)
+  _RoleCard(
+    icon: Icons.analytics_rounded,
+    role: UserRole.admin,
+    color: AppColors.adminColor,
+    onTap: () => Get.offAllNamed(AppRoutes.adminHome),
+  ),
                       ],
                     ),
                   ),
@@ -186,12 +189,13 @@ class RoleSelectionScreen extends StatelessWidget {
                   color: AppColors.eleveurColor,
                   onTap: () => Get.offAllNamed(AppRoutes.eleveurHome),
                 ),
-                _RoleCard(
-                  icon: Icons.analytics_rounded,
-                  role: UserRole.admin,
-                  color: AppColors.adminColor,
-                  onTap: () => Get.offAllNamed(AppRoutes.adminHome),
-                ),
+                if (isAdmin)
+  _RoleCard(
+    icon: Icons.analytics_rounded,
+    role: UserRole.admin,
+    color: AppColors.adminColor,
+    onTap: () => Get.offAllNamed(AppRoutes.adminHome),
+  ),
               ],
             ),
           ),
@@ -218,7 +222,7 @@ class _InfoLine extends StatelessWidget {
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 13,
-              color: Colors.white.withOpacity(0.85),
+              color: Colors.white.withValues(alpha: 0.85),
             ),
           ),
         ),
@@ -250,10 +254,10 @@ class _RoleCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.07),
+              color: color.withValues(alpha: 0.07),
               blurRadius: 16,
               offset: const Offset(0, 4),
             )
@@ -265,7 +269,7 @@ class _RoleCard extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Center(

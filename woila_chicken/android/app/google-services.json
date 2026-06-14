@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "363180835744",
+    "project_id": "woila-chicken",
+    "storage_bucket": "woila-chicken.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:363180835744:android:7bd042ea0f7332b3e65ac5",
+        "android_client_info": {
+          "package_name": "com.woilachicken.woila_chicken"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcPAyS4i3p6nhpIKtpGO3w3R4ma1L29VU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

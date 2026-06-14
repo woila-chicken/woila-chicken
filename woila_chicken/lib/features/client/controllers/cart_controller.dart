@@ -48,7 +48,7 @@ class CartController extends GetxController {
     }
     Get.snackbar(
       'Ajouté au panier ✓',
-      '${product.name} — ${product.formattedPrice}',
+      '${product.name} — ${product.pricefcfa}',
       backgroundColor: AppColors.success,
       colorText: Colors.white,
       snackPosition: SnackPosition.BOTTOM,

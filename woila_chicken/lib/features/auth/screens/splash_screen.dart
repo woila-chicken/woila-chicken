@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/firestore_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/routes/app_routes.dart';
+import 'maintenance_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -28,9 +31,29 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
     );
     _controller.forward();
-    Future.delayed(const Duration(milliseconds: 2800), () {
-      Get.offNamed(AppRoutes.login);
-    });
+    Future.delayed(const Duration(milliseconds: 2000), () async {
+  final auth = Get.find<AuthService>();
+  final firestore = Get.find<FirestoreService>();
+
+  // Vérifier le mode maintenance
+  final isMaintenance = await firestore.isMaintenanceMode();
+
+  if (isMaintenance && !auth.isAdmin.value) {
+    // Afficher la page de maintenance
+    Get.offAll(() => const MaintenanceScreen());
+    return;
+  }
+
+  if (auth.isLoggedIn) {
+    Get.offAllNamed(
+      AppRoutes.roleSelection,
+      arguments: {'isAdmin': auth.isAdmin.value},
+    );
+  } else {
+    Get.offNamed(AppRoutes.login);
+  }
+});
+  
   }
 
   @override
@@ -62,12 +85,12 @@ class _SplashScreenState extends State<SplashScreen>
                       color: Colors.white,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.accent.withOpacity(0.4),
+                        color: AppColors.accent.withValues(alpha: 0.4),
                         width: 3,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 30,
                           offset: const Offset(0, 10),
                         ),
@@ -79,7 +102,6 @@ class _SplashScreenState extends State<SplashScreen>
                         child: Image.asset(
                           'assets/images/logo.png',
                           fit: BoxFit.contain,
-                          // Fallback si le logo n'est pas encore copié
                           errorBuilder: (context, error, stackTrace) =>
                               const Center(
                             child: Icon(Icons.set_meal_rounded, color: AppColors.primary, size: 64),
@@ -111,14 +133,14 @@ class _SplashScreenState extends State<SplashScreen>
                       Container(
                           width: 40,
                           height: 1,
-                          color: AppColors.accent.withOpacity(0.6)),
+                          color: AppColors.accent.withValues(alpha: 0.6)),
                       const SizedBox(width: 12),
                       Text(
                         'La ferme à portée de main',
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 13,
-                          color: Colors.white.withOpacity(0.75),
+                          color: Colors.white.withValues(alpha: 0.75),
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -126,7 +148,7 @@ class _SplashScreenState extends State<SplashScreen>
                       Container(
                           width: 40,
                           height: 1,
-                          color: AppColors.accent.withOpacity(0.6)),
+                          color: AppColors.accent.withValues(alpha: 0.6)),
                     ],
                   ),
                   const SizedBox(height: 56),
@@ -137,7 +159,7 @@ class _SplashScreenState extends State<SplashScreen>
                     height: 28,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppColors.accent.withOpacity(0.8),
+                      color: AppColors.accent.withValues(alpha: 0.8),
                     ),
                   ),
                 ],

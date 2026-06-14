@@ -8,10 +8,12 @@ import '../../features/client/screens/catalogue_screen.dart';
 import '../../features/eleveur/screens/eleveur_home_screen.dart';
 import '../../features/admin/screens/admin_home_screen.dart';
 import '../../features/client/screens/order_tracking_screen.dart';
+import '../../features/auth/screens/register_screen.dart';
 
 class AppRoutes {
   static const splash        = '/';
   static const login         = '/login';
+  static const register      = '/register';
   static const roleSelection = '/role-selection';
 
   // Client
@@ -52,11 +54,16 @@ class AppRoutes {
 ),
 GetPage(
   name: AppRoutes.orderTracking,
-  page: () => const OrderTrackingScreen(),
+  page: () => OrderTrackingScreen(orderId: Get.arguments['orderId']),
 ),
     GetPage(name: eleveurHome,  page: () => const EleveurHomeScreen(),
         transition: Transition.rightToLeft),
     GetPage(name: adminHome,    page: () => const AdminHomeScreen(),
         transition: Transition.rightToLeft),
+    GetPage(
+  name: AppRoutes.register,
+  page: () => const RegisterScreen(),
+  transition: Transition.rightToLeft,
+),
   ];
 }
