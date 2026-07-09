@@ -6,6 +6,8 @@ import 'core/services/firebase_service.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/firestore_service.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/storage_service.dart';
+import 'features/auth/screens/maintenance_screen.dart';
 import 'features/client/controllers/cart_controller.dart';
 
 void main() async {
@@ -14,12 +16,36 @@ void main() async {
   Get.put(AuthService(), permanent: true);
   Get.put(FirestoreService(), permanent: true);
   Get.put(NotificationService(), permanent: true);
+  Get.put(StorageService(), permanent: true);
   Get.put(CartController(), permanent: true);
   runApp(const WoilaChickenApp());
 }
 
-class WoilaChickenApp extends StatelessWidget {
+class WoilaChickenApp extends StatefulWidget {
   const WoilaChickenApp({super.key});
+
+  @override
+  State<WoilaChickenApp> createState() => _WoilaChickenAppState();
+}
+
+class _WoilaChickenAppState extends State<WoilaChickenApp> {
+  @override
+  void initState() {
+    super.initState();
+    _listenMaintenance();
+  }
+
+  void _listenMaintenance() {
+    final firestore = Get.find<FirestoreService>();
+    final auth = Get.find<AuthService>();
+
+    firestore.getSettings().listen((settings) {
+      final isMaintenance = settings['maintenanceMode'] ?? false;
+      if (isMaintenance && !auth.isAdmin.value && auth.isLoggedIn) {
+        Get.offAll(() => const MaintenanceScreen());
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

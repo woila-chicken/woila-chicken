@@ -35,10 +35,10 @@ class WoilaKpiCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color.withOpacity(0.15), width: 1.5),
+          border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.08),
+              color: color.withValues(alpha: 0.08),
               blurRadius: 20,
               offset: const Offset(0, 6),
             ),
@@ -58,8 +58,8 @@ class WoilaKpiCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        color.withOpacity(0.15),
-                        color.withOpacity(0.08),
+                        color.withValues(alpha: 0.15),
+                        color.withValues(alpha: 0.08),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -75,7 +75,7 @@ class WoilaKpiCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
-                        color: _trendColor.withOpacity(0.1),
+                        color: _trendColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -113,7 +113,7 @@ class WoilaKpiCard extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: value,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -156,9 +156,9 @@ class WoilaKpiCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: _progressValue,
-                backgroundColor: color.withOpacity(0.08),
+                backgroundColor: color.withValues(alpha: 0.08),
                 valueColor:
-                    AlwaysStoppedAnimation<Color>(color.withOpacity(0.5)),
+                    AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.5)),
                 minHeight: 3,
               ),
             ),

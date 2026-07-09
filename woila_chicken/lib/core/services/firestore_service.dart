@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../models/product.dart';
 
@@ -15,9 +16,8 @@ class FirestoreService extends GetxService {
       query = query.where('farmId', isEqualTo: farmId);
     }
 
-    return query.snapshots().map((snap) => snap.docs
-        .map((doc) => _productFromDoc(doc))
-        .toList());
+    return query.snapshots().map((snap) =>
+        snap.docs.map((doc) => _productFromDoc(doc)).toList());
   }
 
   Future<void> addProduct(Map<String, dynamic> data) async {
@@ -28,70 +28,7 @@ class FirestoreService extends GetxService {
     });
   }
 
-  // ── PARAMÈTRES PLATEFORME ─────────────────────────────────────
-Stream<Map<String, dynamic>> getSettings() {
-  return _db
-      .collection('config')
-      .doc('settings')
-      .snapshots()
-      .map((doc) => doc.exists
-          ? doc.data() ?? _defaultSettings
-          : _defaultSettings);
-}
-
-Future<void> updateSettings(Map<String, dynamic> data) async {
-  await _db
-      .collection('config')
-      .doc('settings')
-      .set(data, SetOptions(merge: true));
-}
-
-Future<bool> isMaintenanceMode() async {
-  try {
-    final doc = await _db
-        .collection('config')
-        .doc('settings')
-        .get();
-    return doc.data()?['maintenanceMode'] as bool? ?? false;
-  } catch (_) {
-    return false;
-  }
-}
-
-Future<void> purgeTestData() async {
-  // Supprimer toutes les commandes avec status 'pending'
-  // créées il y a plus de 24h (données de test abandonnées)
-  final cutoff = DateTime.now().subtract(const Duration(hours: 24));
-  final oldOrders = await _db
-      .collection('orders')
-      .where('status', isEqualTo: 'pending')
-      .where('createdAt', isLessThan: Timestamp.fromDate(cutoff))
-      .get();
-
-  final batch = _db.batch();
-  for (final doc in oldOrders.docs) {
-    batch.delete(doc.reference);
-  }
-  await batch.commit();
-}
-
-static const _defaultSettings = {
-  'commissionRate': 2,
-  'deliveryFee': 500,
-  'platformName': 'Woïla Chicken',
-  'contactEmail': 'contact@woilachicken.cm',
-  'contactPhone': '+237 6XX XXX XXX',
-  'city': 'Garoua',
-  'notifNewOrder': true,
-  'notifNewFarm': true,
-  'notifDispute': true,
-  'allowNewRegistrations': true,
-  'requireSanitaryCert': false,
-  'maintenanceMode': false,
-};
-
-  Future<void> updateProduct(
-      String id, Map<String, dynamic> data) async {
+  Future<void> updateProduct(String id, Map<String, dynamic> data) async {
     await _db.collection('products').doc(id).update(data);
   }
 
@@ -104,10 +41,9 @@ static const _defaultSettings = {
 
   // ── COMMANDES ─────────────────────────────────────────────────
   Future<String> createOrder(Map<String, dynamic> data) async {
-    // Générer la référence
-    final count = await _db.collection('orders').count().get();
-    final ref = 'WC-${1000 + (count.count ?? 0)}';
-
+  try {
+    // Générer une ref simple sans count()
+    final ref = 'WC-${DateTime.now().millisecondsSinceEpoch % 100000}';
     final commission =
         ((data['total'] as num) * 0.02).roundToDouble();
 
@@ -120,11 +56,15 @@ static const _defaultSettings = {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
+    debugPrint('Commande créée : ${doc.id} — $ref');
     return doc.id;
+  } catch (e) {
+    debugPrint('Erreur createOrder: $e');
+    rethrow;
   }
+}
 
-  Stream<List<Map<String, dynamic>>> getClientOrders(
-      String clientId) {
+  Stream<List<Map<String, dynamic>>> getClientOrders(String clientId) {
     return _db
         .collection('orders')
         .where('clientId', isEqualTo: clientId)
@@ -135,8 +75,7 @@ static const _defaultSettings = {
             .toList());
   }
 
-  Stream<List<Map<String, dynamic>>> getFarmOrders(
-      String farmId) {
+  Stream<List<Map<String, dynamic>>> getFarmOrders(String farmId) {
     return _db
         .collection('orders')
         .where('farmId', isEqualTo: farmId)
@@ -157,19 +96,10 @@ static const _defaultSettings = {
             .toList());
   }
 
-  Future<void> updateOrderStatus(
-      String orderId, String status) async {
+  Future<void> updateOrderStatus(String orderId, String status) async {
     final data = <String, dynamic>{'status': status};
-
-    // Libérer le paiement si commande terminée
-    if (status == 'completed') {
-      data['paymentStatus'] = 'released';
-    }
-    // Rembourser si litige
-    if (status == 'disputed') {
-      data['paymentStatus'] = 'refunded';
-    }
-
+    if (status == 'completed') data['paymentStatus'] = 'released';
+    if (status == 'disputed') data['paymentStatus'] = 'refunded';
     await _db.collection('orders').doc(orderId).update(data);
   }
 
@@ -184,14 +114,12 @@ static const _defaultSettings = {
             .toList());
   }
 
-  Future<Map<String, dynamic>?> getFarmByOwner(
-      String ownerId) async {
+  Future<Map<String, dynamic>?> getFarmByOwner(String ownerId) async {
     final snap = await _db
         .collection('farms')
         .where('ownerId', isEqualTo: ownerId)
         .limit(1)
         .get();
-
     if (snap.docs.isEmpty) return null;
     return {'id': snap.docs.first.id, ...snap.docs.first.data()};
   }
@@ -200,7 +128,7 @@ static const _defaultSettings = {
     await _db
         .collection('farms')
         .doc(farmId)
-        .update({'isVerified': true});
+        .update({'isVerified': true, 'isSuspended': false});
   }
 
   Future<void> suspendFarm(String farmId) async {
@@ -222,8 +150,9 @@ static const _defaultSettings = {
       'status': 'open',
       'createdAt': FieldValue.serverTimestamp(),
     });
-    // Mettre la commande en litige
-    await updateOrderStatus(data['orderId'], 'disputed');
+    if (data['orderId'] != null) {
+      await updateOrderStatus(data['orderId'], 'disputed');
+    }
   }
 
   Stream<List<Map<String, dynamic>>> getAllDisputes() {
@@ -251,7 +180,6 @@ static const _defaultSettings = {
     required int stars,
     required String comment,
   }) async {
-    // Ajouter la note
     await _db.collection('ratings').add({
       'farmId': farmId,
       'orderId': orderId,
@@ -261,7 +189,6 @@ static const _defaultSettings = {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    // Recalculer la moyenne de la ferme
     final ratings = await _db
         .collection('ratings')
         .where('farmId', isEqualTo: farmId)
@@ -315,22 +242,109 @@ static const _defaultSettings = {
     };
   }
 
-  // ── Helpers ───────────────────────────────────────────────────
+  // ── PARAMÈTRES ────────────────────────────────────────────────
+  Stream<Map<String, dynamic>> getSettings() {
+    return _db
+        .collection('config')
+        .doc('settings')
+        .snapshots()
+        .map((doc) =>
+            doc.exists ? doc.data() ?? _defaultSettings : _defaultSettings);
+  }
+
+  Future<void> updateSettings(Map<String, dynamic> data) async {
+    await _db
+        .collection('config')
+        .doc('settings')
+        .set(data, SetOptions(merge: true));
+  }
+
+  Future<bool> isMaintenanceMode() async {
+    try {
+      final doc = await _db
+          .collection('config')
+          .doc('settings')
+          .get();
+      return doc.data()?['maintenanceMode'] as bool? ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> purgeTestData() async {
+    final cutoff = DateTime.now()
+        .subtract(const Duration(hours: 24));
+    final oldOrders = await _db
+        .collection('orders')
+        .where('status', isEqualTo: 'pending')
+        .where('createdAt',
+            isLessThan: Timestamp.fromDate(cutoff))
+        .get();
+
+    final batch = _db.batch();
+    for (final doc in oldOrders.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+  }
+
+  static const _defaultSettings = {
+    'commissionRate': 2,
+    'deliveryFee': 500,
+    'platformName': 'Woïla Chicken',
+    'contactEmail': 'woila.chicken.cm@gmail.com',
+    'contactPhone': '+237 6XX XXX XXX',
+    'city': 'Garoua',
+    'notifNewOrder': true,
+    'notifNewFarm': true,
+    'notifDispute': true,
+    'allowNewRegistrations': true,
+    'requireSanitaryCert': false,
+    'maintenanceMode': false,
+  };
+
+  // ── HELPER CONVERSION PRODUIT ─────────────────────────────────
   Product _productFromDoc(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>;
+
+    double toDouble(dynamic v) {
+      if (v == null) return 0.0;
+      if (v is double) return v;
+      if (v is int) return v.toDouble();
+      if (v is String) return double.tryParse(v) ?? 0.0;
+      return 0.0;
+    }
+
+    String toStr(dynamic v, [String fallback = '']) {
+      if (v == null) return fallback;
+      if (v is String) return v;
+      return v.toString();
+    }
+
+    bool toBool(dynamic v, [bool fallback = false]) {
+      if (v == null) return fallback;
+      if (v is bool) return v;
+      if (v is int) return v == 1;
+      if (v is String) return v == 'true';
+      return fallback;
+    }
+
+    final photoUrl = toStr(d['photoUrl']);
+    final imageUrl = toStr(d['imageUrl']);
+
     return Product(
       id: doc.id,
-      farmId: d['farmId'] ?? '',
-      name: d['name'] ?? '',
-      weightKg: (d['weightKg'] as num?)?.toDouble() ?? 0,
-      pricefcfa: (d['priceFcfa'] as num?)?.toDouble() ?? 0,
-      farmName: d['farmName'] ?? '',
-      farmRating: (d['farmRating'] as num?)?.toDouble() ?? 0,
-      hasSanitaryCert: d['hasSanitaryCert'] ?? false,
-      deliveryAvailable: d['deliveryAvailable'] ?? true,
-      pickupAvailable: d['pickupAvailable'] ?? true,
-      availability: d['availability'] ?? 'immediate',
-      imageUrl: d['imageUrl'],
+      farmId: toStr(d['farmId']),
+      name: toStr(d['name']),
+      weightKg: toDouble(d['weightKg']),
+      pricefcfa: toDouble(d['priceFcfa']),
+      farmName: toStr(d['farmName']),
+      farmRating: toDouble(d['farmRating']),
+      hasSanitaryCert: toBool(d['hasSanitaryCert']),
+      deliveryAvailable: toBool(d['deliveryAvailable'], true),
+      pickupAvailable: toBool(d['pickupAvailable'], true),
+      availability: toStr(d['availability'], 'immediate'),
+      imageUrl: photoUrl.isNotEmpty ? photoUrl : imageUrl,
     );
   }
 }

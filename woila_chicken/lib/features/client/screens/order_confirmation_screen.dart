@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/models/product.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/responsive_layout.dart';
+import 'order_tracking_screen.dart';
 
 class OrderConfirmationScreen extends StatelessWidget {
   final Product product;
@@ -48,7 +49,7 @@ class OrderConfirmationScreen extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
           // Icône succès animée
           Container(
@@ -216,7 +217,10 @@ class OrderConfirmationScreen extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => Get.toNamed(AppRoutes.orderTracking),
+              onPressed: () => Get.to(
+  () => OrderTrackingScreen(orderId: orderRef),
+  transition: Transition.rightToLeft,
+),
               icon: const Icon(Icons.visibility_outlined, size: 18),
               label: const Text('Suivre ma commande'),
               style: ElevatedButton.styleFrom(

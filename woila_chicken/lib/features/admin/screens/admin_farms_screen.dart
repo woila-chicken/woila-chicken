@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/services/firestore_service.dart';
+import '../../../core/widgets/woila_toast.dart';
 
 class AdminFarmsScreen extends StatelessWidget {
   const AdminFarmsScreen({super.key});
@@ -98,7 +99,7 @@ class AdminFarmsScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isPending
-                  ? AppColors.warning.withOpacity(0.5)
+                  ? AppColors.warning.withValues(alpha: 0.5)
                   : AppColors.divider,
               width: isPending ? 1.5 : 1,
             ),
@@ -113,7 +114,7 @@ class AdminFarmsScreen extends StatelessWidget {
                   height: 44,
                   decoration: BoxDecoration(
                     color: _statusColor(isVerified, isSuspended)
-                        .withOpacity(0.1),
+                        .withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -151,7 +152,7 @@ class AdminFarmsScreen extends StatelessWidget {
                       horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: _statusColor(isVerified, isSuspended)
-                        .withOpacity(0.1),
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -191,15 +192,8 @@ class AdminFarmsScreen extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () async {
                         await firestore.verifyFarm(farm['id']);
-                        Get.snackbar(
-                          'Ferme vérifiée',
-                          '${farm['name']} a reçu le badge Vérifié',
-                          backgroundColor: AppColors.success,
-                          colorText: Colors.white,
-                          snackPosition: SnackPosition.BOTTOM,
-                          icon: const Icon(Icons.verified_rounded,
-                              color: Colors.white),
-                        );
+                        WoilaToast.success('Ferme vérifiée',
+    '${farm['name']} a reçu le badge Vérifié');
                       },
                       icon: const Icon(Icons.verified_outlined, size: 16),
                       label: const Text('Accorder le badge',
@@ -212,13 +206,7 @@ class AdminFarmsScreen extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: () async {
                         await firestore.suspendFarm(farm['id']);
-                        Get.snackbar(
-                          'Ferme refusée',
-                          '${farm['name']} a été refusée',
-                          backgroundColor: AppColors.error,
-                          colorText: Colors.white,
-                          snackPosition: SnackPosition.BOTTOM,
-                        );
+                        WoilaToast.error('Ferme refusée', '${farm['name']} a été refusée');
                       },
                       style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.error,
@@ -234,13 +222,7 @@ class AdminFarmsScreen extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: () async {
                       await firestore.suspendFarm(farm['id']);
-                      Get.snackbar(
-                        'Ferme suspendue',
-                        '${farm['name']} a été suspendue',
-                        backgroundColor: AppColors.error,
-                        colorText: Colors.white,
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
+                      WoilaToast.error('Ferme suspendue', '${farm['name']} a été suspendue');
                     },
                     icon: const Icon(Icons.block_outlined,
                         size: 16, color: AppColors.error),
@@ -257,13 +239,7 @@ class AdminFarmsScreen extends StatelessWidget {
                   ElevatedButton.icon(
                     onPressed: () async {
                       await firestore.verifyFarm(farm['id']);
-                      Get.snackbar(
-                        'Ferme réactivée',
-                        '${farm['name']} a été réactivée',
-                        backgroundColor: AppColors.success,
-                        colorText: Colors.white,
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
+                      WoilaToast.success('Ferme réactivée', '${farm['name']} a été réactivée');
                     },
                     icon: const Icon(Icons.refresh_rounded, size: 16),
                     label: const Text('Réactiver',

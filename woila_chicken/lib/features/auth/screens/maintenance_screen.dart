@@ -20,7 +20,7 @@ class MaintenanceScreen extends StatelessWidget {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -45,7 +45,7 @@ class MaintenanceScreen extends StatelessWidget {
                   style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 13,
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                       height: 1.6),
                   textAlign: TextAlign.center,
                 ),
@@ -53,7 +53,7 @@ class MaintenanceScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(children: [
@@ -62,11 +62,11 @@ class MaintenanceScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Pour toute urgence, contactez-nous à contact@woilachicken.cm',
+                        'Pour toute urgence, contactez-nous à woila.chicken.cm@gmail.com',
                         style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
-                            color: Colors.white.withOpacity(0.85)),
+                            color: Colors.white.withValues(alpha: 0.85)),
                       ),
                     ),
                   ]),

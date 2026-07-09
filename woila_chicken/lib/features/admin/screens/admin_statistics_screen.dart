@@ -223,7 +223,7 @@ class _TopFarmes extends StatelessWidget {
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
-                      color: _rankColor(rank).withOpacity(0.15),
+                      color: _rankColor(rank).withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -391,7 +391,7 @@ class _BarChart extends StatelessWidget {
                       color: d.value >= 0.9
                           ? AppColors.primary
                           : AppColors.primary
-                              .withOpacity(0.3 + d.value * 0.4),
+                              .withValues(alpha: 0.3 + d.value * 0.4),
                       borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(6)),
                     ),
@@ -490,8 +490,8 @@ class _IndicatorRow extends StatelessWidget {
               const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
             color: isUp
-                ? AppColors.success.withOpacity(0.1)
-                : AppColors.error.withOpacity(0.1),
+                ? AppColors.success.withValues(alpha: 0.1)
+                : AppColors.error.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(trend,

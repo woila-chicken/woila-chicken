@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../core/services/auth_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/services/firestore_service.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/widgets/woila_toast.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   final String orderId;
   const OrderTrackingScreen({super.key, required this.orderId});
 
   @override
-  State<OrderTrackingScreen> createState() => _OrderTrackingScreenState();
+  State<OrderTrackingScreen> createState() =>
+      _OrderTrackingScreenState();
 }
 
-class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
+class _OrderTrackingScreenState
+    extends State<OrderTrackingScreen> {
   final _firestore = Get.find<FirestoreService>();
 
   String _formatPrice(double p) =>
@@ -24,8 +27,43 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
             (m) => '${m[1]} ',
           )} FCFA';
 
+  // Convertit n'importe quelle valeur en String sans crash
+  String _str(dynamic v, [String fallback = '']) {
+    if (v == null) return fallback;
+    if (v is String) return v;
+    return v.toString();
+  }
+
+  // Convertit en double sans crash
+  double _dbl(dynamic v, [double fallback = 0]) {
+    if (v == null) return fallback;
+    if (v is double) return v;
+    if (v is int) return v.toDouble();
+    if (v is String) return double.tryParse(v) ?? fallback;
+    return fallback;
+  }
+
+  // Convertit en bool sans crash
+  bool _bool(dynamic v, [bool fallback = false]) {
+    if (v == null) return fallback;
+    if (v is bool) return v;
+    return fallback;
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (widget.orderId.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Suivi commande')),
+        body: const Center(
+          child: Text('Référence de commande manquante',
+              style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: AppColors.textSecondary)),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -43,37 +81,111 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            );
-          }
-          if (!snap.hasData || !snap.data!.exists) {
-            return const Center(
-              child: Text('Commande introuvable',
-                  style: TextStyle(fontFamily: 'Poppins', color: AppColors.textSecondary)),
+              child: CircularProgressIndicator(
+                  color: AppColors.primary),
             );
           }
 
-          final data = snap.data!.data() as Map<String, dynamic>;
-          final status = data['status'] ?? 'pending';
-          final ref = data['ref'] ?? '';
-          final productName = data['productName'] ?? '';
-          final farmName = data['farmName'] ?? '';
-          final farmId = data['farmId'] ?? '';
-          final total = (data['total'] as num?)?.toDouble() ?? 0;
-          final isDelivery = data['isDelivery'] as bool? ?? true;
+          if (snap.hasError) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline,
+                      color: AppColors.error, size: 48),
+                  const SizedBox(height: 12),
+                  Text('Erreur : ${snap.error}',
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          color: AppColors.textSecondary)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () =>
+                        Get.offAllNamed(AppRoutes.clientHome),
+                    child: const Text('Retour à l\'accueil'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (!snap.hasData || snap.data == null) {
+            return const Center(
+              child: CircularProgressIndicator(
+                  color: AppColors.primary),
+            );
+          }
+
+          if (!snap.data!.exists) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.receipt_long_outlined,
+                      color: AppColors.textSecondary, size: 48),
+                  const SizedBox(height: 12),
+                  const Text('Commande introuvable',
+                      style: TextStyle(
+                          fontFamily: 'Poppins',
+                          color: AppColors.textSecondary)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () =>
+                        Get.offAllNamed(AppRoutes.clientHome),
+                    child: const Text('Retour à l\'accueil'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Extraire les données de manière défensive
+          final raw = snap.data!.data();
+          if (raw == null) {
+            return const Center(
+              child: Text('Données de commande vides',
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: AppColors.textSecondary)),
+            );
+          }
+
+          final data = raw as Map<String, dynamic>;
+          final status = _str(data['status'], 'pending');
+          final ref = _str(data['ref'], widget.orderId);
+          final productName = _str(data['productName'], 'Produit');
+          final farmName = _str(data['farmName'], 'Ferme');
+          final farmId = _str(data['farmId']);
+          final total = _dbl(data['total']);
+          final isDelivery = _bool(data['isDelivery'], true);
 
           return ResponsiveLayout(
             desktop: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 640),
-                child: _buildContent(context,
-                    status: status, ref: ref, productName: productName,
-                    farmName: farmName, farmId: farmId, total: total, isDelivery: isDelivery),
+                constraints:
+                    const BoxConstraints(maxWidth: 640),
+                child: _buildContent(
+                  context,
+                  status: status,
+                  ref: ref,
+                  productName: productName,
+                  farmName: farmName,
+                  farmId: farmId,
+                  total: total,
+                  isDelivery: isDelivery,
+                ),
               ),
             ),
-            mobile: _buildContent(context,
-                status: status, ref: ref, productName: productName,
-                farmName: farmName, farmId: farmId, total: total, isDelivery: isDelivery),
+            mobile: _buildContent(
+              context,
+              status: status,
+              ref: ref,
+              productName: productName,
+              farmName: farmName,
+              farmId: farmId,
+              total: total,
+              isDelivery: isDelivery,
+            ),
           );
         },
       ),
@@ -93,7 +205,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(children: [
-        // ── Référence + statut global ──────────────────────────
+        // ── Référence + statut ───────────────────────────────
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
@@ -103,24 +215,28 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           ),
           child: Column(children: [
             const Text('Référence commande',
-                style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Colors.white70)),
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    color: Colors.white70)),
             const SizedBox(height: 4),
             Text('#$ref',
                 style: const TextStyle(
                     fontFamily: 'Poppins',
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
-                    letterSpacing: 3)),
+                    letterSpacing: 2)),
             const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                _statusGlobalLabel(status),
+                _statusLabel(status),
                 style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 13,
@@ -132,7 +248,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         ),
         const SizedBox(height: 16),
 
-        // ── Résumé produit ───────────────────────────────────────
+        // ── Résumé produit ───────────────────────────────────
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -148,36 +264,48 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 color: AppColors.primary.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.set_meal_rounded, color: AppColors.primary, size: 28),
+              child: const Icon(Icons.set_meal_rounded,
+                  color: AppColors.primary, size: 28),
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(productName,
-                    style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary)),
-                const SizedBox(height: 3),
-                Text(farmName,
-                    style: const TextStyle(
-                        fontFamily: 'Poppins', fontSize: 12, color: AppColors.textSecondary)),
-                const SizedBox(height: 3),
-                Row(children: [
-                  Icon(
-                    isDelivery ? Icons.local_shipping_outlined : Icons.storefront_outlined,
-                    size: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    isDelivery ? 'Livraison à domicile' : 'Retrait ferme',
-                    style: const TextStyle(
-                        fontFamily: 'Poppins', fontSize: 11, color: AppColors.textSecondary),
-                  ),
-                ]),
-              ]),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(productName,
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary)),
+                  const SizedBox(height: 3),
+                  Text(farmName,
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          color: AppColors.textSecondary)),
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    Icon(
+                      isDelivery
+                          ? Icons.local_shipping_outlined
+                          : Icons.storefront_outlined,
+                      size: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isDelivery
+                          ? 'Livraison à domicile'
+                          : 'Retrait ferme',
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          color: AppColors.textSecondary),
+                    ),
+                  ]),
+                ],
+              ),
             ),
             Text(_formatPrice(total),
                 style: const TextStyle(
@@ -189,7 +317,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         ),
         const SizedBox(height: 16),
 
-        // ── Timeline de suivi ────────────────────────────────────
+        // ── Timeline ─────────────────────────────────────────
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -197,59 +325,68 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: AppColors.divider),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Étapes de livraison',
-                style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary)),
-            const SizedBox(height: 16),
-            _TrackingStep(
-              title: 'Paiement confirmé',
-              subtitle: 'Fonds sécurisés en séquestre',
-              status: _stepStatus(status, 'pending'),
-              isLast: false,
-            ),
-            _TrackingStep(
-              title: 'Préparation en cours',
-              subtitle: '$farmName prépare votre commande',
-              status: _stepStatus(status, 'confirmed'),
-              isLast: false,
-            ),
-            _TrackingStep(
-              title: isDelivery ? 'En route' : 'Prêt pour retrait',
-              subtitle: isDelivery ? 'Le livreur est en chemin' : 'Rendez-vous à la ferme',
-              status: _stepStatus(status, 'inRoute'),
-              isLast: false,
-            ),
-            _TrackingStep(
-              title: isDelivery ? 'Livré' : 'Récupéré',
-              subtitle: isDelivery ? 'Commande remise au client' : 'Commande retirée à la ferme',
-              status: _stepStatus(status, 'delivered'),
-              isLast: false,
-            ),
-            _TrackingStep(
-              title: 'Réception confirmée',
-              subtitle: 'Paiement libéré à l\'éleveur',
-              status: _stepStatus(status, 'completed'),
-              isLast: true,
-            ),
-          ]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Étapes de livraison',
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary)),
+              const SizedBox(height: 16),
+              _TrackingStep(
+                title: 'Paiement confirmé',
+                subtitle: 'Fonds sécurisés en séquestre',
+                stepStatus: _stepStatus(status, 'pending'),
+                isLast: false,
+              ),
+              _TrackingStep(
+                title: 'Préparation en cours',
+                subtitle: '$farmName prépare votre commande',
+                stepStatus: _stepStatus(status, 'confirmed'),
+                isLast: false,
+              ),
+              _TrackingStep(
+                title: isDelivery ? 'En route' : 'Prêt pour retrait',
+                subtitle: isDelivery
+                    ? 'Le livreur est en chemin'
+                    : 'Rendez-vous à la ferme',
+                stepStatus: _stepStatus(status, 'inRoute'),
+                isLast: false,
+              ),
+              _TrackingStep(
+                title: isDelivery ? 'Livré' : 'Récupéré',
+                subtitle: isDelivery
+                    ? 'Commande remise au client'
+                    : 'Commande retirée à la ferme',
+                stepStatus: _stepStatus(status, 'delivered'),
+                isLast: false,
+              ),
+              _TrackingStep(
+                title: 'Réception confirmée',
+                subtitle: 'Paiement libéré à l\'éleveur',
+                stepStatus: _stepStatus(status, 'completed'),
+                isLast: true,
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
 
-        // ── Bouton confirmation réception ────────────────────────
+        // ── Confirmation réception ────────────────────────────
         if (status == 'delivered') ...[
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.success.withOpacity(0.07),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.success.withOpacity(0.3)),
+              border: Border.all(
+                  color: AppColors.success.withOpacity(0.3)),
             ),
             child: Column(children: [
-              const Icon(Icons.inventory_outlined, color: AppColors.success, size: 32),
+              const Icon(Icons.inventory_outlined,
+                  color: AppColors.success, size: 32),
               const SizedBox(height: 10),
               const Text('Vous avez reçu votre commande ?',
                   style: TextStyle(
@@ -261,20 +398,29 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               const SizedBox(height: 6),
               const Text(
                 'En confirmant, vous autorisez le paiement à l\'éleveur.',
-                style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => _confirmReception(farmName),
-                  icon: const Icon(Icons.check_circle_outline, size: 18),
+                  onPressed: () =>
+                      _confirmReception(farmName),
+                  icon: const Icon(
+                      Icons.check_circle_outline,
+                      size: 18),
                   label: const Text('Confirmer la réception',
-                      style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
+                      style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 14),
                   ),
                 ),
               ),
@@ -285,15 +431,20 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => _showDisputeDialog(context),
-              icon: const Icon(Icons.report_outlined, size: 16, color: AppColors.error),
+              icon: const Icon(Icons.report_outlined,
+                  size: 16, color: AppColors.error),
               label: const Text('Signaler un problème',
-                  style: TextStyle(fontFamily: 'Poppins', color: AppColors.error)),
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.error)),
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: AppColors.error)),
+              style: OutlinedButton.styleFrom(
+                  side:
+                      const BorderSide(color: AppColors.error)),
             ),
           ),
         ],
 
-        // ── Statut final ─────────────────────────────────────────
+        // ── Commande terminée ─────────────────────────────────
         if (status == 'completed') ...[
           Container(
             width: double.infinity,
@@ -301,10 +452,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
             decoration: BoxDecoration(
               color: AppColors.success.withOpacity(0.08),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.success.withOpacity(0.3)),
+              border: Border.all(
+                  color: AppColors.success.withOpacity(0.3)),
             ),
             child: Column(children: [
-              const Icon(Icons.check_circle, color: AppColors.success, size: 40),
+              const Icon(Icons.check_circle,
+                  color: AppColors.success, size: 40),
               const SizedBox(height: 10),
               const Text('Commande terminée !',
                   style: TextStyle(
@@ -313,16 +466,26 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       fontWeight: FontWeight.w700,
                       color: AppColors.success)),
               const SizedBox(height: 6),
-              const Text('Merci pour votre confiance. N\'oubliez pas de noter la ferme.',
-                  style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: AppColors.textSecondary),
-                  textAlign: TextAlign.center),
+              const Text(
+                'Merci pour votre confiance.',
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 14),
               ElevatedButton.icon(
-                onPressed: () => _showRatingDialog(context, farmId, farmName),
+                onPressed: () => _showRatingDialog(
+                    context, farmId, farmName),
                 icon: const Icon(Icons.star_outline, size: 18),
-                label: const Text('Noter la ferme', style: TextStyle(fontFamily: 'Poppins')),
+                label: const Text('Noter la ferme',
+                    style:
+                        TextStyle(fontFamily: 'Poppins')),
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accent, foregroundColor: const Color(0xFF412402)),
+                    backgroundColor: AppColors.accent,
+                    foregroundColor:
+                        const Color(0xFF412402)),
               ),
             ]),
           ),
@@ -332,46 +495,54 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
-            onPressed: () => Get.offAllNamed(AppRoutes.clientHome),
-            child: const Text('Retour à l\'accueil'),
+            onPressed: () =>
+                Get.offAllNamed(AppRoutes.clientHome),
+            child: const Text('Retour à l\'accueil',
+                style: TextStyle(fontFamily: 'Poppins')),
           ),
         ),
       ]),
     );
   }
 
-  // ── Helpers ────────────────────────────────────────────────────
-  _StepStatusType _stepStatus(String currentStatus, String step) {
-    const order = ['pending', 'confirmed', 'inRoute', 'delivered', 'completed'];
-    final currentIndex = order.indexOf(currentStatus);
-    final stepIndex = order.indexOf(step);
-    if (currentIndex > stepIndex) return _StepStatusType.done;
-    if (currentIndex == stepIndex) return _StepStatusType.active;
+  // ── Helpers ───────────────────────────────────────────────────
+  _StepStatusType _stepStatus(String current, String step) {
+    const order = [
+      'pending',
+      'confirmed',
+      'inRoute',
+      'delivered',
+      'completed'
+    ];
+    final ci = order.indexOf(current);
+    final si = order.indexOf(step);
+    if (ci < 0 || si < 0) return _StepStatusType.pending;
+    if (ci > si) return _StepStatusType.done;
+    if (ci == si) return _StepStatusType.active;
     return _StepStatusType.pending;
   }
 
-  String _statusGlobalLabel(String status) {
+  String _statusLabel(String status) {
     switch (status) {
-      case 'pending':   return 'Paiement confirmé';
-      case 'confirmed': return 'En cours de préparation';
-      case 'inRoute':   return 'En route vers vous';
-      case 'delivered': return 'Livré — En attente de confirmation';
-      case 'completed': return 'Commande terminée';
-      case 'disputed':  return 'Litige en cours';
-      default:          return status;
+      case 'pending':    return 'Paiement confirmé';
+      case 'confirmed':  return 'En cours de préparation';
+      case 'inRoute':    return 'En route vers vous';
+      case 'delivered':  return 'Livré — En attente de confirmation';
+      case 'completed':  return 'Commande terminée';
+      case 'disputed':   return 'Litige en cours';
+      default:           return 'En cours';
     }
   }
 
   Future<void> _confirmReception(String farmName) async {
-    await _firestore.updateOrderStatus(widget.orderId, 'completed');
-    Get.snackbar(
-      'Merci !',
-      'Paiement libéré à $farmName.',
-      backgroundColor: AppColors.success,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.BOTTOM,
-      icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
-    );
+    try {
+      await _firestore.updateOrderStatus(
+          widget.orderId, 'completed');
+      WoilaToast.success(
+          'Merci !', 'Paiement libéré à $farmName.');
+    } catch (e) {
+      WoilaToast.error('Erreur', 'Impossible de confirmer la réception');
+    }
   }
 
   void _showDisputeDialog(BuildContext context) {
@@ -379,46 +550,66 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
         title: const Text('Signaler un problème',
-            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+            style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w700)),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('Décrivez le problème rencontré (poids incorrect, produit endommagé...)',
-              style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: AppColors.textSecondary)),
+          const Text(
+              'Décrivez le problème rencontré',
+              style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  color: AppColors.textSecondary)),
           const SizedBox(height: 12),
           TextFormField(
             controller: descCtrl,
             maxLines: 3,
-            decoration: const InputDecoration(hintText: 'Décrivez le problème...'),
+            decoration: const InputDecoration(
+                hintText: 'Décrivez le problème...'),
           ),
         ]),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler',
-                style: TextStyle(fontFamily: 'Poppins', color: AppColors.textSecondary)),
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error),
             onPressed: () async {
               Navigator.pop(context);
-              await _firestore.createDispute({
-                'orderId': widget.orderId,
-                'type': 'autre',
-                'description': descCtrl.text,
-              });
-              Get.snackbar('Litige ouvert', 'L\'admin a été notifié et va intervenir.',
-                  backgroundColor: AppColors.error, colorText: Colors.white,
-                  snackPosition: SnackPosition.BOTTOM);
+              try {
+                await _firestore.createDispute({
+                  'orderId': widget.orderId,
+                  'type': 'autre',
+                  'description': descCtrl.text,
+                  'clientId':
+                      Get.find<AuthService>().uid,
+                  'farmId': '',
+                });
+                WoilaToast.warning('Litige ouvert',
+                    'L\'admin a été notifié');
+              } catch (e) {
+                WoilaToast.error(
+                    'Erreur', 'Impossible d\'ouvrir le litige');
+              }
             },
-            child: const Text('Envoyer', style: TextStyle(fontFamily: 'Poppins')),
+            child: const Text('Envoyer',
+                style: TextStyle(fontFamily: 'Poppins')),
           ),
         ],
       ),
     );
   }
 
-  void _showRatingDialog(BuildContext context, String farmId, String farmName) {
+  void _showRatingDialog(
+      BuildContext context, String farmId, String farmName) {
     int selectedStars = 5;
     final commentCtrl = TextEditingController();
 
@@ -426,56 +617,81 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setS) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
           title: Column(children: [
             const Text('Noter la ferme',
-                style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 16)),
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16)),
             const SizedBox(height: 4),
             Text(farmName,
-                style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, color: AppColors.textSecondary)),
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    color: AppColors.textSecondary)),
           ]),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
+          content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(5, (i) => GestureDetector(
-                onTap: () => setS(() => selectedStars = i + 1),
-                child: Icon(
-                  i < selectedStars ? Icons.star : Icons.star_border,
-                  color: AppColors.accent,
-                  size: 36,
+              children: List.generate(
+                5,
+                (i) => GestureDetector(
+                  onTap: () =>
+                      setS(() => selectedStars = i + 1),
+                  child: Icon(
+                    i < selectedStars
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    color: AppColors.accent,
+                    size: 36,
+                  ),
                 ),
-              )),
+              ),
             ),
             const SizedBox(height: 14),
             TextFormField(
               controller: commentCtrl,
               maxLines: 3,
-              decoration: const InputDecoration(hintText: 'Laissez un commentaire (optionnel)...'),
+              decoration: const InputDecoration(
+                  hintText:
+                      'Laissez un commentaire (optionnel)...'),
             ),
           ]),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Annuler',
-                  style: TextStyle(fontFamily: 'Poppins', color: AppColors.textSecondary)),
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: AppColors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(ctx);
-                final auth = Get.find<AuthService>();
-                await _firestore.addRating(
-                  farmId: farmId,
-                  orderId: widget.orderId,
-                  clientId: auth.uid,
-                  stars: selectedStars,
-                  comment: commentCtrl.text,
-                );
-                Get.snackbar('Merci pour votre avis !',
+                try {
+                  await _firestore.addRating(
+                    farmId: farmId,
+                    orderId: widget.orderId,
+                    clientId:
+                        Get.find<AuthService>().uid,
+                    stars: selectedStars,
+                    comment: commentCtrl.text,
+                  );
+                  WoilaToast.success(
+                    'Merci pour votre avis !',
                     '$selectedStars étoile${selectedStars > 1 ? 's' : ''} — $farmName',
-                    backgroundColor: AppColors.success, colorText: Colors.white,
-                    snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 3));
+                  );
+                } catch (e) {
+                  WoilaToast.error('Erreur',
+                      'Impossible d\'envoyer la note');
+                }
               },
-              child: const Text('Envoyer', style: TextStyle(fontFamily: 'Poppins')),
+              child: const Text('Envoyer',
+                  style: TextStyle(fontFamily: 'Poppins')),
             ),
           ],
         ),
@@ -484,24 +700,24 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   }
 }
 
-// ─── Widget étape timeline ────────────────────────────────────────
+// ── Widget étape timeline ─────────────────────────────────────────
 enum _StepStatusType { done, active, pending }
 
 class _TrackingStep extends StatelessWidget {
   final String title;
   final String subtitle;
-  final _StepStatusType status;
+  final _StepStatusType stepStatus;
   final bool isLast;
 
   const _TrackingStep({
     required this.title,
     required this.subtitle,
-    required this.status,
+    required this.stepStatus,
     required this.isLast,
   });
 
   Color get _color {
-    switch (status) {
+    switch (stepStatus) {
       case _StepStatusType.done:    return AppColors.success;
       case _StepStatusType.active:  return AppColors.primary;
       case _StepStatusType.pending: return AppColors.divider;
@@ -511,47 +727,64 @@ class _TrackingStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IntrinsicHeight(
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
         Column(children: [
           Container(
             width: 20,
             height: 20,
             decoration: BoxDecoration(
-              color: status == _StepStatusType.pending ? Colors.white : _color,
+              color: stepStatus == _StepStatusType.pending
+                  ? Colors.white
+                  : _color,
               shape: BoxShape.circle,
               border: Border.all(color: _color, width: 2),
             ),
-            child: status == _StepStatusType.done
-                ? const Icon(Icons.check, size: 12, color: Colors.white)
-                : status == _StepStatusType.active
-                    ? const Icon(Icons.circle, size: 8, color: Colors.white)
+            child: stepStatus == _StepStatusType.done
+                ? const Icon(Icons.check,
+                    size: 12, color: Colors.white)
+                : stepStatus == _StepStatusType.active
+                    ? const Icon(Icons.circle,
+                        size: 8, color: Colors.white)
                     : null,
           ),
           if (!isLast)
             Expanded(
               child: Container(
                 width: 2,
-                color: status == _StepStatusType.done ? AppColors.success : AppColors.divider,
-                margin: const EdgeInsets.symmetric(vertical: 3),
+                color: stepStatus == _StepStatusType.done
+                    ? AppColors.success
+                    : AppColors.divider,
+                margin:
+                    const EdgeInsets.symmetric(vertical: 3),
               ),
             ),
         ]),
         const SizedBox(width: 14),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.only(bottom: isLast ? 0 : 20),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            padding:
+                EdgeInsets.only(bottom: isLast ? 0 : 20),
+            child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
               Text(title,
                   style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: status == _StepStatusType.pending
+                      color: stepStatus ==
+                              _StepStatusType.pending
                           ? AppColors.textSecondary
                           : AppColors.textPrimary)),
               const SizedBox(height: 2),
               Text(subtitle,
-                  style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: AppColors.textSecondary)),
+                  style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 11,
+                      color: AppColors.textSecondary)),
             ]),
           ),
         ),

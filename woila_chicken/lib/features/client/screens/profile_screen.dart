@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/responsive_layout.dart';
-import '../../../core/routes/app_routes.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/firestore_service.dart';
+import '../../../core/services/storage_service.dart';
+import '../../../core/widgets/woila_toast.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -12,16 +17,120 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _isEditing = false;
+  final _auth = Get.find<AuthService>();
+  final _firestore = Get.find<FirestoreService>();
 
-  final _nameCtrl =
-      TextEditingController(text: 'Amadou Diallo');
-  final _phoneCtrl =
-      TextEditingController(text: '+237 6XX XXX XXX');
-  final _emailCtrl =
-      TextEditingController(text: 'amadou@email.com');
-  final _quartierCtrl =
-      TextEditingController(text: 'Marché central, Garoua');
+  bool _isEditing = false;
+  bool _isLoading = true;
+  bool _isSaving = false;
+  bool _notifEnabled = true;
+
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _addressCtrl = TextEditingController();
+
+  String? _photoUrl;
+  bool _isUploadingAvatar = false;
+  final _storage = Get.find<StorageService>();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+  // Attendre que l'uid soit disponible
+  if (_auth.uid.isEmpty) {
+    setState(() => _isLoading = false);
+    return;
+  }
+
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_auth.uid)
+        .get();
+    if (!mounted) return;
+    final data = doc.data() ?? {};
+    setState(() {
+      _nameCtrl.text = data['name'] ?? '';
+      _phoneCtrl.text = data['phone'] ?? '';
+      _emailCtrl.text =
+          data['email'] ?? _auth.currentUser.value?.email ?? '';
+      _addressCtrl.text = data['address'] ?? '';
+      _notifEnabled = data['notifEnabled'] as bool? ?? true;
+      _photoUrl = data['photoUrl'] as String?;
+      _isLoading = false;
+    });
+  } catch (e) {
+    debugPrint('Erreur loadProfile: $e');
+    if (!mounted) return;
+    setState(() {
+      // Charger au moins l'email depuis l'auth même si Firestore échoue
+      _emailCtrl.text = _auth.currentUser.value?.email ?? '';
+      _isLoading = false;
+    });
+  }
+}
+
+  Future<void> _pickAndUploadAvatar() async {
+  final bytes = await _storage.pickImage();
+  if (bytes == null) return;
+
+  setState(() => _isUploadingAvatar = true);
+  try {
+    final url = await _storage.uploadImage(
+      bytes: bytes,
+      path: _storage.profilePath(_auth.uid),
+    );
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_auth.uid)
+        .set({'photoUrl': url}, SetOptions(merge: true));
+
+    setState(() {
+      _photoUrl = url;
+      _isUploadingAvatar = false;
+    });
+
+    WoilaToast.success('Photo mise à jour',
+    'Votre photo de profil a été changée');
+  } catch (e) {
+    setState(() => _isUploadingAvatar = false);
+    WoilaToast.error('Erreur', 'Impossible de changer la photo');
+  }
+}
+
+  Future<void> _save() async {
+    setState(() => _isSaving = true);
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_auth.uid)
+          .set({
+        'name': _nameCtrl.text.trim(),
+        'phone': _phoneCtrl.text.trim(),
+        'address': _addressCtrl.text.trim(),
+      }, SetOptions(merge: true));
+
+      WoilaToast.success('Profil mis à jour',
+    'Vos informations ont été enregistrées');
+    } catch (e) {
+      WoilaToast.error('Erreur', 'Impossible d\'enregistrer les modifications');
+    } finally {
+      setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _toggleNotif(bool v) async {
+    setState(() => _notifEnabled = v);
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_auth.uid)
+        .set({'notifEnabled': v}, SetOptions(merge: true));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,27 +139,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: const Text('Mon profil'),
         actions: [
-          TextButton(
-            onPressed: () => setState(() => _isEditing = !_isEditing),
-            child: Text(
-              _isEditing ? 'Enregistrer' : 'Modifier',
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600),
+          if (!_isLoading)
+            TextButton(
+              onPressed: _isSaving
+                  ? null
+                  : () async {
+                      if (_isEditing) await _save();
+                      setState(() => _isEditing = !_isEditing);
+                    },
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(
+                      _isEditing ? 'Enregistrer' : 'Modifier',
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600),
+                    ),
             ),
-          ),
         ],
       ),
-      body: ResponsiveLayout(
-        desktop: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
-            child: _buildContent(),
-          ),
-        ),
-        mobile: _buildContent(),
-      ),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : ResponsiveLayout(
+              desktop: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 700),
+                  child: _buildContent(),
+                ),
+              ),
+              mobile: _buildContent(),
+            ),
     );
   }
 
@@ -58,7 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(children: [
-        // Avatar
+        // ── Avatar ─────────────────────────────────────────────
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 28),
@@ -67,34 +193,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(children: [
-            Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: const BoxDecoration(
-                      color: Colors.white, shape: BoxShape.circle),
-                  child: const Center(
-                    child: Icon(Icons.person,
-                        size: 44, color: AppColors.primary),
-                  ),
-                ),
-                if (_isEditing)
-                  Container(
-                    width: 26,
-                    height: 26,
-                    decoration: const BoxDecoration(
-                        color: AppColors.accent,
-                        shape: BoxShape.circle),
-                    child: const Icon(Icons.camera_alt,
-                        size: 14, color: Color(0xFF412402)),
-                  ),
-              ],
-            ),
+            GestureDetector(
+  onTap: (_isEditing && !_isUploadingAvatar) ? _pickAndUploadAvatar : null,
+  child: Stack(
+    alignment: Alignment.bottomRight,
+    children: [
+      Container(
+        width: 80,
+        height: 80,
+        decoration: const BoxDecoration(
+            color: Colors.white, shape: BoxShape.circle),
+        child: ClipOval(
+          child: _isUploadingAvatar
+              ? const Center(
+                  child: CircularProgressIndicator(
+                      color: AppColors.primary, strokeWidth: 2),
+                )
+              : _photoUrl != null && _photoUrl!.isNotEmpty
+                  ? Image.network(
+                      _photoUrl!,
+                      fit: BoxFit.cover,
+                      width: 80,
+                      height: 80,
+                      errorBuilder: (_, __, ___) => const Icon(
+                          Icons.person,
+                          size: 44,
+                          color: AppColors.primary),
+                    )
+                  : const Icon(Icons.person,
+                      size: 44, color: AppColors.primary),
+        ),
+      ),
+      if (_isEditing)
+        Container(
+          width: 26,
+          height: 26,
+          decoration: const BoxDecoration(
+              color: AppColors.accent, shape: BoxShape.circle),
+          child: const Icon(Icons.camera_alt,
+              size: 14, color: Color(0xFF412402)),
+        ),
+    ],
+  ),
+),
             const SizedBox(height: 12),
             Text(
-              _nameCtrl.text,
+              _nameCtrl.text.isEmpty ? 'Client Woïla' : _nameCtrl.text,
               style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 18,
@@ -113,7 +257,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Infos personnelles
+        // ── Infos personnelles ────────────────────────────────
         _ProfileCard(
           title: 'Informations personnelles',
           icon: Icons.person_outline,
@@ -134,34 +278,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _ProfileField(
               label: 'Email',
               ctrl: _emailCtrl,
-              isEditing: _isEditing,
+              isEditing: false, // email non modifiable (lié à l'auth)
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 12),
             _ProfileField(
               label: 'Adresse de livraison par défaut',
-              ctrl: _quartierCtrl,
+              ctrl: _addressCtrl,
               isEditing: _isEditing,
             ),
           ]),
         ),
         const SizedBox(height: 16),
 
-        // Stats
-        _ProfileCard(
-          title: 'Mon activité',
-          icon: Icons.bar_chart_outlined,
-          child: Row(children: [
-            const _StatBlock(value: '4', label: 'Commandes'),
-            _Divider(),
-            const _StatBlock(value: '23 800', label: 'FCFA dépensés'),
-            _Divider(),
-            const _StatBlock(value: '3', label: 'Fermes notées'),
-          ]),
+        // ── Activité réelle ────────────────────────────────────
+        StreamBuilder<List<Map<String, dynamic>>>(
+          stream: _firestore.getClientOrders(_auth.uid),
+          builder: (context, snap) {
+            final orders = snap.data ?? [];
+            final completed =
+                orders.where((o) => o['status'] == 'completed').toList();
+            final totalSpent = orders.fold<double>(
+                0, (s, o) => s + ((o['total'] as num?) ?? 0));
+
+            return _ProfileCard(
+              title: 'Mon activité',
+              icon: Icons.bar_chart_outlined,
+              child: Row(children: [
+                _StatBlock(value: '${orders.length}', label: 'Commandes'),
+                _Divider(),
+                _StatBlock(
+                    value: totalSpent.toStringAsFixed(0),
+                    label: 'FCFA dépensés'),
+                _Divider(),
+                _StatBlock(
+                    value: '${completed.length}', label: 'Terminées'),
+              ]),
+            );
+          },
         ),
         const SizedBox(height: 16),
 
-        // Paramètres
+        // ── Paramètres ─────────────────────────────────────────
         _ProfileCard(
           title: 'Paramètres',
           icon: Icons.settings_outlined,
@@ -170,9 +328,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: Icons.notifications_outlined,
               label: 'Notifications push',
               trailing: Switch(
-                value: true,
+                value: _notifEnabled,
                 activeColor: AppColors.primary,
-                onChanged: (_) {},
+                onChanged: _toggleNotif,
               ),
             ),
             const Divider(height: 1),
@@ -189,7 +347,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _SettingRow(
               icon: Icons.help_outline,
               label: 'Aide et support',
-              onTap: () {},
+              onTap: () {
+                WoilaToast.info('Support', 'Contactez-nous à woila.chicken.cm@gmail.com');
+              },
             ),
             const Divider(height: 1),
             _SettingRow(
@@ -201,7 +361,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Déconnexion
+        // ── Déconnexion ────────────────────────────────────────
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
@@ -210,8 +370,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: AppColors.error, size: 18),
             label: const Text('Se déconnecter',
                 style: TextStyle(
-                    fontFamily: 'Poppins',
-                    color: AppColors.error)),
+                    fontFamily: 'Poppins', color: AppColors.error)),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.error),
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -227,32 +386,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Se déconnecter ?',
+            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+        content: const Text('Vous serez redirigé vers l\'écran de connexion.',
             style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700)),
-        content: const Text(
-            'Vous serez redirigé vers l\'écran de connexion.',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-                color: AppColors.textSecondary)),
+                fontFamily: 'Poppins', fontSize: 13, color: AppColors.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler',
                 style: TextStyle(
-                    fontFamily: 'Poppins',
-                    color: AppColors.textSecondary)),
+                    fontFamily: 'Poppins', color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
               Navigator.pop(context);
-              Get.offAllNamed(AppRoutes.login);
+              _auth.logout();
             },
             child: const Text('Déconnecter',
                 style: TextStyle(fontFamily: 'Poppins')),
@@ -339,17 +490,21 @@ class _ProfileField extends StatelessWidget {
               )
             : Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(ctrl.text,
-                    style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        color: AppColors.textPrimary)),
+                child: Text(
+                  ctrl.text.isEmpty ? 'Non renseigné' : ctrl.text,
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      color: ctrl.text.isEmpty
+                          ? AppColors.textSecondary
+                          : AppColors.textPrimary),
+                ),
               ),
       ],
     );

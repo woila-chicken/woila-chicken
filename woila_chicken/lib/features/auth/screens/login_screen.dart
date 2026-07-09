@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/firestore_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/responsive_layout.dart';
+import 'maintenance_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -233,16 +235,7 @@ class _LoginForm extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        TextFormField(
-          controller: passCtrl,
-          obscureText: true,
-          decoration: const InputDecoration(
-            labelText: 'Mot de passe',
-            prefixIcon: Icon(Icons.lock_outline,
-                color: AppColors.primary),
-          ),
-        ),
-        const SizedBox(height: 8),
+        _PasswordField(controller: passCtrl, label: 'Mot de passe'),      const SizedBox(height: 8),
 
         // Erreur Firebase
         Obx(() => auth.errorMessage.value.isNotEmpty
@@ -302,23 +295,33 @@ class _LoginForm extends StatelessWidget {
 
         // Bouton connexion
         Obx(() => ElevatedButton(
-              onPressed: auth.isLoading.value
-                  ? null
-                  : () async {
-                      auth.errorMessage.value = '';
-                      final success = await auth.login(
-                        email: emailCtrl.text.trim(),
-                        password: passCtrl.text,
-                      );
-                      if (success) {
-                        Get.toNamed(
-                          AppRoutes.roleSelection,
-                          arguments: {
-                            'isAdmin': auth.isAdmin.value,
-                          },
-                        );
-                      }
-                    },
+      onPressed: auth.isLoading.value
+          ? null
+          : () async {
+              auth.errorMessage.value = '';
+              final success = await auth.login(
+                email: emailCtrl.text.trim(),
+                password: passCtrl.text,
+              );
+              if (success) {
+                // Vérifier le mode maintenance avant de continuer
+                final firestore = Get.find<FirestoreService>();
+                final isMaintenance =
+                    await firestore.isMaintenanceMode();
+
+                if (isMaintenance && !auth.isAdmin.value) {
+                  Get.offAll(() => const MaintenanceScreen());
+                  return;
+                }
+
+                Get.toNamed(
+                  AppRoutes.roleSelection,
+                  arguments: {
+                    'isAdmin': auth.isAdmin.value,
+                  },
+                );
+              }
+            },
               child: auth.isLoading.value
                   ? const SizedBox(
                       width: 20,
@@ -348,6 +351,49 @@ class _LoginForm extends StatelessWidget {
           child: const Text('Créer un compte'),
         ),
       ],
+    );
+  }
+}
+
+class _PasswordField extends StatefulWidget {
+  final TextEditingController controller;
+  final String label;
+  final String? Function(String?)? validator;
+
+  const _PasswordField({
+    required this.controller,
+    required this.label,
+    this.validator,
+  });
+
+  @override
+  State<_PasswordField> createState() => _PasswordFieldState();
+}
+
+class _PasswordFieldState extends State<_PasswordField> {
+  bool _obscure = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: widget.controller,
+      obscureText: _obscure,
+      validator: widget.validator,
+      decoration: InputDecoration(
+        labelText: widget.label,
+        prefixIcon: const Icon(Icons.lock_outline,
+            color: AppColors.primary),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscure
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
+          onPressed: () => setState(() => _obscure = !_obscure),
+        ),
+      ),
     );
   }
 }

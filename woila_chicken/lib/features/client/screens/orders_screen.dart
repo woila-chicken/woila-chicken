@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firestore_service.dart';
+import '../../../core/widgets/woila_toast.dart';
 import 'order_tracking_screen.dart';
 
 enum OrderFilter { toutes, enCours, livrees, terminees }
@@ -95,13 +96,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget _buildContent() {
     return Column(children: [
       // Filtres
-      SizedBox(
-        height: 52,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(
-              horizontal: 16, vertical: 8),
-          children: [
+      Container(
+  height: 64,
+  color: Colors.white,
+  child: ListView(
+    scrollDirection: Axis.horizontal,
+    padding: const EdgeInsets.symmetric(
+        horizontal: 16, vertical: 12),
+    children: [
             _FilterTab(label: 'Toutes',
                 isSelected: _filter == OrderFilter.toutes,
                 onTap: () => setState(() => _filter = OrderFilter.toutes)),
@@ -123,6 +125,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ],
         ),
       ),
+
+      Container(height: 1, color: AppColors.divider),
 
       // Liste Firestore
       Expanded(
@@ -154,7 +158,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     Icon(Icons.receipt_long_outlined,
                         size: 64,
                         color: AppColors.textSecondary
-                            .withOpacity(0.3)),
+                            .withValues(alpha: 0.3)),
                     const SizedBox(height: 12),
                     const Text('Aucune commande',
                         style: TextStyle(
@@ -183,7 +187,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   status: _statusLabel(status),
                   statusColor: _statusColor(status),
                   canTrack: _canTrack(status),
-                  orderId: order['id'] ?? '',
+                  orderId: order['id']?.toString() ?? '',
                   formatPrice: _formatPrice,
                 );
               },
@@ -260,7 +264,7 @@ class _OrderCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(status,
@@ -277,7 +281,7 @@ class _OrderCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.06),
+                color: AppColors.primary.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.set_meal_rounded,
@@ -321,10 +325,18 @@ class _OrderCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () => Get.to(
-                  () => OrderTrackingScreen(orderId: orderId),
-                  transition: Transition.rightToLeft,
-                ),
+                onPressed: () {
+                  debugPrint('orderId: $orderId');
+  if (orderId.isEmpty) {
+    WoilaToast.error(
+        'Erreur', 'Référence de commande introuvable');
+    return;
+  }
+  Get.to(
+    () => OrderTrackingScreen(orderId: orderId),
+    transition: Transition.rightToLeft,
+  );
+},
                 icon: const Icon(Icons.location_on_outlined,
                     size: 16, color: AppColors.primary),
                 label: const Text('Suivre la commande',
@@ -359,22 +371,37 @@ class _FilterTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      borderRadius: BorderRadius.circular(24),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? color : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected ? color : AppColors.divider,
+            width: 1.2,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : [],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? Colors.white : AppColors.textSecondary,
           ),
         ),
-        child: Text(label,
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? Colors.white : AppColors.textPrimary)),
       ),
     );
   }

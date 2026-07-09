@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/models/product.dart';
 import '../../../core/widgets/responsive_layout.dart';
+import '../../../core/widgets/woila_toast.dart';
 import 'order_confirmation_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/services/auth_service.dart';
@@ -67,11 +68,24 @@ Future<void> _pay() async {
     final auth = Get.find<AuthService>();
     final firestore = Get.find<FirestoreService>();
 
-    // Créer la commande dans Firestore
+    debugPrint('uid: ${auth.uid}');
+    debugPrint('product.farmId: ${widget.product.farmId}');
+    debugPrint('product.id: ${widget.product.id}');
+    debugPrint('total: $_total');
+
+    if (auth.uid.isEmpty) {
+      WoilaToast.error('Erreur', 'Vous devez être connecté');
+      setState(() => _isProcessing = false);
+      return;
+    }
+
     final orderId = await firestore.createOrder({
       'clientId': auth.uid,
-      'clientName': _nameCtrl.text.trim(),
-      'farmId': widget.product.farmId ?? '',
+      'clientName': _nameCtrl.text.trim().isEmpty
+          ? 'Client'
+          : _nameCtrl.text.trim(),
+      'clientPhone': _phoneCtrl.text.trim(),
+      'farmId': widget.product.farmId,
       'farmName': widget.product.farmName,
       'productId': widget.product.id,
       'productName':
@@ -81,46 +95,52 @@ Future<void> _pay() async {
       'deliveryFee': _deliveryFee,
       'total': _total,
       'isDelivery': widget.wantsDelivery,
-      'address':
-          '${_quartierCtrl.text}, ${_villeCtrl.text}',
+      'address': widget.wantsDelivery
+          ? '${_quartierCtrl.text}, ${_villeCtrl.text}'
+          : '',
       'phone': _phoneCtrl.text.trim(),
-      'operator': _operator == MobileOperator.orange
-          ? 'orange'
-          : 'mtn',
+      'operator':
+          _operator == MobileOperator.orange ? 'orange' : 'mtn',
       'momoNumber': _momoCtrl.text.trim(),
     });
 
-    // Décrémenter le stock
-    await FirebaseFirestore.instance
-        .collection('products')
-        .doc(widget.product.id)
-        .update({
-      'quantity': FieldValue.increment(-widget.quantity),
-    });
+    debugPrint('orderId obtenu: $orderId');
 
+    // Décrémenter le stock
+    try {
+      await FirebaseFirestore.instance
+          .collection('products')
+          .doc(widget.product.id)
+          .update({
+        'quantity': FieldValue.increment(-widget.quantity),
+      });
+    } catch (e) {
+      debugPrint('Erreur décrémentation stock (non bloquant): $e');
+    }
+
+    if (!mounted) return;
     setState(() => _isProcessing = false);
 
-    // Naviguer vers la confirmation
     Get.off(() => OrderConfirmationScreen(
           product: widget.product,
           quantity: widget.quantity,
           total: _total,
           wantsDelivery: widget.wantsDelivery,
-          orderRef: orderId, // ← vrai ID Firestore
+          orderRef: orderId,
         ));
-
   } catch (e) {
+    debugPrint('Erreur _pay: $e');
+    if (!mounted) return;
     setState(() => _isProcessing = false);
-    Get.snackbar(
-      'Erreur',
-      'Impossible de passer la commande. Réessayez.',
-      backgroundColor: AppColors.error,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.BOTTOM,
+    WoilaToast.error(
+      'Impossible de passer la commande',
+      e.toString().length > 60
+          ? '${e.toString().substring(0, 60)}...'
+          : e.toString(),
     );
   }
 }
- 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

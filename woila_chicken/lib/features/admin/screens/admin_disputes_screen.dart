@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/services/firestore_service.dart';
+import '../../../core/widgets/woila_toast.dart';
 
 class AdminDisputesScreen extends StatelessWidget {
   const AdminDisputesScreen({super.key});
@@ -117,7 +118,7 @@ class AdminDisputesScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isOpen
-                  ? AppColors.error.withOpacity(0.4)
+                  ? AppColors.error.withValues(alpha: 0.4)
                   : AppColors.divider,
               width: isOpen ? 1.5 : 1,
             ),
@@ -140,7 +141,7 @@ class AdminDisputesScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -157,7 +158,7 @@ class AdminDisputesScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(statusLabel,
@@ -204,15 +205,7 @@ class AdminDisputesScreen extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () async {
                         await firestore.resolveDispute(d['id']);
-                        Get.snackbar(
-                          'Litige résolu',
-                          'Le litige a été marqué comme résolu',
-                          backgroundColor: AppColors.success,
-                          colorText: Colors.white,
-                          snackPosition: SnackPosition.BOTTOM,
-                          icon: const Icon(Icons.check_circle,
-                              color: Colors.white),
-                        );
+                        WoilaToast.success('Litige résolu', 'Le litige a été marqué comme résolu');
                       },
                       icon: const Icon(
                           Icons.check_circle_outline, size: 16),

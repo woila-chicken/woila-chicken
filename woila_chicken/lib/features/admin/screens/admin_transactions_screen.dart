@@ -65,12 +65,14 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
         final ref = (tx['ref'] as String? ?? '').toLowerCase();
         final client = (tx['clientName'] as String? ?? '').toLowerCase();
         final farm = (tx['farmName'] as String? ?? '').toLowerCase();
-        if (!ref.contains(q) && !client.contains(q) && !farm.contains(q))
+        if (!ref.contains(q) && !client.contains(q) && !farm.contains(q)) {
           return false;
+        }
       }
       // Ferme
-      if (_selectedFarm != 'Toutes' && tx['farmName'] != _selectedFarm)
+      if (_selectedFarm != 'Toutes' && tx['farmName'] != _selectedFarm) {
         return false;
+      }
       // Dates
       if (_dateFrom != null || _dateTo != null) {
         try {
@@ -377,7 +379,7 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.07),
+                color: AppColors.primary.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.swap_horiz,
@@ -403,8 +405,8 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
                           horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
                         color: isDelivery
-                            ? AppColors.primary.withOpacity(0.08)
-                            : AppColors.accent.withOpacity(0.2),
+                            ? AppColors.primary.withValues(alpha: 0.08)
+                            : AppColors.accent.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
@@ -476,6 +478,7 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
   void _showFiltersSheet(BuildContext context) {
     // Récupère les fermes du stream
     Get.find<FirestoreService>().getAllOrders().first.then((orders) {
+      if (!context.mounted) return;
       final farms = <String>{'Toutes'};
       for (final o in orders) {
         final f = o['farmName'] as String?;
@@ -752,110 +755,6 @@ class _FiltersPanel extends StatelessWidget {
                 color: AppColors.textPrimary)),
       ]),
     ]);
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────
-//  Carte transaction
-// ─────────────────────────────────────────────────────────────────
-class _TxCard extends StatelessWidget {
-  final AdminTransaction tx;
-  final String Function(double) formatPrice;
-
-  const _TxCard({required this.tx, required this.formatPrice});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Row(children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child:
-              const Icon(Icons.swap_horiz, color: AppColors.primary, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Text('#${tx.ref}',
-                  style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary)),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: tx.isDelivery
-                      ? AppColors.primary.withValues(alpha: 0.08)
-                      : AppColors.accent.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      tx.isDelivery
-                          ? Icons.local_shipping_rounded
-                          : Icons.storefront_rounded,
-                      size: 10,
-                      color: tx.isDelivery
-                          ? AppColors.primary
-                          : const Color(0xFF412402),
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      tx.isDelivery ? 'Livraison' : 'Retrait',
-                      style:
-                          const TextStyle(fontFamily: 'Poppins', fontSize: 9),
-                    ),
-                  ],
-                ),
-              ),
-            ]),
-            const SizedBox(height: 2),
-            Text('${tx.clientName} · ${tx.farmName}',
-                style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11,
-                    color: AppColors.textSecondary)),
-            Text('${tx.product} · ${tx.date}',
-                style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11,
-                    color: AppColors.textSecondary)),
-          ]),
-        ),
-        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text(formatPrice(tx.total),
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary)),
-          const SizedBox(height: 2),
-          Text('Commission : ${formatPrice(tx.commission)}',
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.success)),
-        ]),
-      ]),
-    );
   }
 }
 

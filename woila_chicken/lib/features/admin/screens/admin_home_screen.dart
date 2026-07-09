@@ -203,9 +203,9 @@ class _DesktopAdminLayout extends StatelessWidget {
               children: [
                 _AdminTopBar(),
                 Container(height: 1, color: AppColors.divider),
-                Expanded(
+                const Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(32),
+                    padding: EdgeInsets.all(32),
                     child: _AdminDashboardBody(isDesktop: true),
                   ),
                 ),
@@ -352,8 +352,8 @@ class _MobileAdminLayout extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(16),
         child: _AdminDashboardBody(isDesktop: false),
       ),
       bottomNavigationBar: StreamBuilder<List<Map<String, dynamic>>>(
@@ -949,7 +949,7 @@ class _FarmRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
+            color: statusColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(statusLabel,
@@ -1106,10 +1106,10 @@ class _AdminTopBar extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: AppColors.error.withOpacity(0.3)),
+                        color: AppColors.error.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1274,32 +1274,3 @@ class _AdminSidebarItem extends StatelessWidget {
     );
   }
 }
-
-// ─── Données mock ──────────────────────────────────────────────────
-final _mockFarms = [
-  {'name': 'Ferme Koné', 'verified': true, 'products': 8, 'sales': 14},
-  {'name': 'Ferme Alhadji', 'verified': false, 'products': 5, 'sales': 0},
-  {'name': 'Ferme Bougué', 'verified': true, 'products': 12, 'sales': 21},
-  {'name': 'Ferme Sadou', 'verified': false, 'products': 3, 'sales': 0},
-];
-
-const _mockTransactions = [
-  {
-    'label': 'Commande #1042 — Ferme Koné',
-    'date': '10 mai 2026',
-    'total': '10 500 FCFA',
-    'commission': '210 FCFA',
-  },
-  {
-    'label': 'Commande #1041 — Ferme Bougué',
-    'date': '9 mai 2026',
-    'total': '4 200 FCFA',
-    'commission': '84 FCFA',
-  },
-  {
-    'label': 'Commande #1040 — Ferme Koné',
-    'date': '8 mai 2026',
-    'total': '7 800 FCFA',
-    'commission': '156 FCFA',
-  },
-];

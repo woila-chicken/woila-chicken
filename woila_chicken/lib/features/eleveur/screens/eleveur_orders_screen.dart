@@ -140,7 +140,7 @@ class _EleveurOrdersScreenState
                 Icon(Icons.receipt_long_outlined,
                     size: 64,
                     color: AppColors.textSecondary
-                        .withOpacity(0.3)),
+                        .withValues(alpha: 0.3)),
                 const SizedBox(height: 12),
                 const Text('Aucune commande reçue',
                     style: TextStyle(
@@ -215,7 +215,7 @@ class _EleveurOrderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: onConfirm != null
-              ? AppColors.warning.withOpacity(0.5)
+              ? AppColors.warning.withValues(alpha: 0.5)
               : AppColors.divider,
           width: onConfirm != null ? 1.5 : 1,
         ),
@@ -235,7 +235,7 @@ class _EleveurOrderCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(statusLabel,

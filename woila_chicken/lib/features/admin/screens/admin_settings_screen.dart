@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/responsive_layout.dart';
-import '../../../core/routes/app_routes.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firestore_service.dart';
+import '../../../core/widgets/woila_toast.dart';
 
 class AdminSettingsScreen extends StatelessWidget {
   const AdminSettingsScreen({super.key});
@@ -23,8 +23,7 @@ class AdminSettingsScreen extends StatelessWidget {
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(
-                  color: AppColors.primary),
+              child: CircularProgressIndicator(color: AppColors.primary),
             );
           }
           final settings = snap.data ?? {};
@@ -72,18 +71,15 @@ class _SettingsBodyState extends State<_SettingsBody> {
   }
 
   void _initFromSettings(Map<String, dynamic> s) {
-    _commissionCtrl = TextEditingController(
-        text: '${s['commissionRate'] ?? 2}');
-    _deliveryFeeCtrl = TextEditingController(
-        text: '${s['deliveryFee'] ?? 500}');
-    _platformNameCtrl = TextEditingController(
-        text: s['platformName'] ?? 'Woïla Chicken');
-    _contactEmailCtrl = TextEditingController(
-        text: s['contactEmail'] ?? '');
-    _contactPhoneCtrl = TextEditingController(
-        text: s['contactPhone'] ?? '');
-    _cityCtrl =
-        TextEditingController(text: s['city'] ?? 'Garoua');
+    _commissionCtrl =
+        TextEditingController(text: '${s['commissionRate'] ?? 2}');
+    _deliveryFeeCtrl =
+        TextEditingController(text: '${s['deliveryFee'] ?? 500}');
+    _platformNameCtrl =
+        TextEditingController(text: s['platformName'] ?? 'Woïla Chicken');
+    _contactEmailCtrl = TextEditingController(text: s['contactEmail'] ?? '');
+    _contactPhoneCtrl = TextEditingController(text: s['contactPhone'] ?? '');
+    _cityCtrl = TextEditingController(text: s['city'] ?? 'Garoua');
     _notifNewOrder = s['notifNewOrder'] ?? true;
     _notifNewFarm = s['notifNewFarm'] ?? true;
     _notifDispute = s['notifDispute'] ?? true;
@@ -96,22 +92,9 @@ class _SettingsBodyState extends State<_SettingsBody> {
     setState(() => _isSaving = true);
     try {
       await _firestore.updateSettings(patch);
-      Get.snackbar(
-        'Enregistré',
-        'Paramètres mis à jour avec succès',
-        backgroundColor: AppColors.success,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-        icon: const Icon(Icons.check_circle, color: Colors.white),
-      );
+      WoilaToast.success('Enregistré', 'Paramètres mis à jour avec succès');
     } catch (e) {
-      Get.snackbar(
-        'Erreur',
-        'Impossible d\'enregistrer les paramètres',
-        backgroundColor: AppColors.error,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      WoilaToast.error('Erreur', 'Impossible d\'enregistrer les paramètres');
     } finally {
       setState(() => _isSaving = false);
     }
@@ -339,8 +322,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
         const Divider(height: 20),
         _ToggleRow(
           label: 'Certification sanitaire obligatoire',
-          sublabel:
-              'Exiger la certification pour publier un produit',
+          sublabel: 'Exiger la certification pour publier un produit',
           value: _requireSanitaryCert,
           onChanged: (v) async {
             setState(() => _requireSanitaryCert = v);
@@ -418,12 +400,10 @@ class _SettingsBodyState extends State<_SettingsBody> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Activer la maintenance ?',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700)),
+            style:
+                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
         content: const Text(
           'Tous les clients et éleveurs verront un écran de maintenance et ne pourront plus utiliser l\'app. Seul l\'admin garde l\'accès.\n\nCette action est immédiate.',
           style: TextStyle(
@@ -436,19 +416,17 @@ class _SettingsBodyState extends State<_SettingsBody> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler',
                 style: TextStyle(
-                    fontFamily: 'Poppins',
-                    color: AppColors.textSecondary)),
+                    fontFamily: 'Poppins', color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
               Navigator.pop(context);
               setState(() => _maintenanceMode = true);
               await _save({'maintenanceMode': true});
             },
-            child: const Text('Activer',
-                style: TextStyle(fontFamily: 'Poppins')),
+            child:
+                const Text('Activer', style: TextStyle(fontFamily: 'Poppins')),
           ),
         ],
       ),
@@ -458,25 +436,18 @@ class _SettingsBodyState extends State<_SettingsBody> {
   void _disableMaintenance() async {
     setState(() => _maintenanceMode = false);
     await _save({'maintenanceMode': false});
-    Get.snackbar(
-      'Maintenance désactivée',
-      'La plateforme est de nouveau accessible',
-      backgroundColor: AppColors.success,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    WoilaToast.success(
+        'Maintenance désactivée', 'La plateforme est de nouveau accessible');
   }
 
   void _confirmPurge() {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Purger les données de test ?',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700)),
+            style:
+                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
         content: const Text(
           'Les commandes abandonnées depuis plus de 24h (status "en attente") seront supprimées définitivement.\n\nCette action est irréversible.',
           style: TextStyle(
@@ -489,35 +460,22 @@ class _SettingsBodyState extends State<_SettingsBody> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler',
                 style: TextStyle(
-                    fontFamily: 'Poppins',
-                    color: AppColors.textSecondary)),
+                    fontFamily: 'Poppins', color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
               Navigator.pop(context);
               try {
                 await _firestore.purgeTestData();
-                Get.snackbar(
-                  'Données purgées',
-                  'Les commandes de test ont été supprimées',
-                  backgroundColor: AppColors.success,
-                  colorText: Colors.white,
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                WoilaToast.success('Données purgées',
+                    'Les commandes de test ont été supprimées');
               } catch (e) {
-                Get.snackbar(
-                  'Erreur',
-                  'Impossible de purger les données',
-                  backgroundColor: AppColors.error,
-                  colorText: Colors.white,
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                WoilaToast.error('Erreur', 'Impossible de purger les données');
               }
             },
-            child: const Text('Purger',
-                style: TextStyle(fontFamily: 'Poppins')),
+            child:
+                const Text('Purger', style: TextStyle(fontFamily: 'Poppins')),
           ),
         ],
       ),
@@ -532,12 +490,10 @@ class _SettingsBodyState extends State<_SettingsBody> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Changer le mot de passe',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700)),
+            style:
+                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           _DialogField(
               ctrl: currentCtrl,
@@ -545,9 +501,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
               isPassword: true),
           const SizedBox(height: 12),
           _DialogField(
-              ctrl: newCtrl,
-              label: 'Nouveau mot de passe',
-              isPassword: true),
+              ctrl: newCtrl, label: 'Nouveau mot de passe', isPassword: true),
           const SizedBox(height: 12),
           _DialogField(
               ctrl: confirmCtrl,
@@ -559,50 +513,29 @@ class _SettingsBodyState extends State<_SettingsBody> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler',
                 style: TextStyle(
-                    fontFamily: 'Poppins',
-                    color: AppColors.textSecondary)),
+                    fontFamily: 'Poppins', color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () async {
               if (newCtrl.text != confirmCtrl.text) {
-                Get.snackbar(
-                  'Erreur',
-                  'Les mots de passe ne correspondent pas',
-                  backgroundColor: AppColors.error,
-                  colorText: Colors.white,
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                WoilaToast.error(
+                    'Erreur', 'Les mots de passe ne correspondent pas');
                 return;
               }
               if (newCtrl.text.length < 6) {
-                Get.snackbar(
-                  'Erreur',
-                  'Minimum 6 caractères',
-                  backgroundColor: AppColors.error,
-                  colorText: Colors.white,
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                WoilaToast.error('Erreur', 'Minimum 6 caractères');
                 return;
               }
               try {
-                await _auth.currentUser.value
-                    ?.updatePassword(newCtrl.text);
+                await _auth.currentUser.value?.updatePassword(newCtrl.text);
+                if (!mounted) return;
                 Navigator.pop(context);
-                Get.snackbar(
-                  'Mot de passe modifié',
-                  'Votre nouveau mot de passe est actif',
-                  backgroundColor: AppColors.success,
-                  colorText: Colors.white,
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                WoilaToast.success('Mot de passe modifié',
+                    'Votre nouveau mot de passe est actif');
               } catch (e) {
-                Get.snackbar(
-                  'Erreur',
-                  'Reconnectez-vous avant de changer le mot de passe',
-                  backgroundColor: AppColors.error,
-                  colorText: Colors.white,
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                if (!mounted) return;
+                WoilaToast.error('Erreur',
+                    'Reconnectez-vous avant de changer le mot de passe');
               }
             },
             child: const Text('Confirmer',
@@ -619,8 +552,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(20))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => DraggableScrollableSheet(
         initialChildSize: 0.6,
         maxChildSize: 0.9,
@@ -669,8 +601,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
                 }
                 return ListView.builder(
                   controller: ctrl,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: orders.length,
                   itemBuilder: (_, i) {
                     final o = orders[i];
@@ -681,21 +612,16 @@ class _SettingsBodyState extends State<_SettingsBody> {
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: AppColors.primary
-                                .withOpacity(0.1),
-                            borderRadius:
-                                BorderRadius.circular(10),
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(
-                              Icons.receipt_long_outlined,
-                              size: 18,
-                              color: AppColors.primary),
+                          child: const Icon(Icons.receipt_long_outlined,
+                              size: 18, color: AppColors.primary),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Commande #${o['ref'] ?? ''} — ${o['farmName'] ?? ''}',
@@ -710,8 +636,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
                                 style: const TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 11,
-                                    color:
-                                        AppColors.textSecondary),
+                                    color: AppColors.textSecondary),
                               ),
                             ],
                           ),
@@ -732,14 +657,11 @@ class _SettingsBodyState extends State<_SettingsBody> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Se déconnecter ?',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700)),
-        content: const Text(
-            'Vous serez redirigé vers l\'écran de connexion.',
+            style:
+                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+        content: const Text('Vous serez redirigé vers l\'écran de connexion.',
             style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
@@ -749,12 +671,10 @@ class _SettingsBodyState extends State<_SettingsBody> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler',
                 style: TextStyle(
-                    fontFamily: 'Poppins',
-                    color: AppColors.textSecondary)),
+                    fontFamily: 'Poppins', color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
               Navigator.pop(context);
               _auth.logout();
@@ -798,8 +718,7 @@ class _SettingsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(icon,
-                color: titleColor ?? AppColors.primary, size: 20),
+            Icon(icon, color: titleColor ?? AppColors.primary, size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(title,
@@ -864,8 +783,8 @@ class _SettingsField extends StatelessWidget {
               )
             : Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(10),
@@ -976,9 +895,7 @@ class _ActionRow extends StatelessWidget {
               children: [
                 Text(label,
                     style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        color: color)),
+                        fontFamily: 'Poppins', fontSize: 13, color: color)),
                 if (sublabel != null) ...[
                   const SizedBox(height: 2),
                   Text(sublabel!,
@@ -991,7 +908,7 @@ class _ActionRow extends StatelessWidget {
             ),
           ),
           Icon(Icons.chevron_right,
-              size: 18, color: color.withOpacity(0.5)),
+              size: 18, color: color.withValues(alpha: 0.5)),
         ]),
       ),
     );

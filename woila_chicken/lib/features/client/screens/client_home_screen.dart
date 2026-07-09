@@ -6,11 +6,14 @@ import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/models/product.dart';
 import '../controllers/cart_controller.dart';
 import '../controllers/catalogue_controller.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/firestore_service.dart';
 import 'catalogue_screen.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
 import 'profile_screen.dart';
+import '../../../core/widgets/product_card.dart';
 
 class ClientHomeScreen extends StatefulWidget {
   const ClientHomeScreen({super.key});
@@ -276,15 +279,57 @@ class _ClientHomeBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Stats rapides
-        const Row(
+         StreamBuilder<List<Map<String, dynamic>>>(
+  stream: Get.find<FirestoreService>().getAllFarms(),
+  builder: (context, farmSnap) {
+    return StreamBuilder<List<Product>>(
+      stream: Get.find<FirestoreService>().getProducts(),
+      builder: (context, productSnap) {
+        final farms = farmSnap.data ?? [];
+        final verifiedFarms =
+            farms.where((f) => f['isVerified'] == true).toList();
+        final products = productSnap.data ?? [];
+
+        double avgRating = 0;
+        if (verifiedFarms.isNotEmpty) {
+          final ratings = verifiedFarms
+              .map((f) => (f['rating'] as num?)?.toDouble() ?? 0)
+              .where((r) => r > 0)
+              .toList();
+          if (ratings.isNotEmpty) {
+            avgRating =
+                ratings.reduce((a, b) => a + b) / ratings.length;
+          }
+        }
+
+        return Row(
           children: [
-            _StatCard(value: '24', label: 'Fermes'),
-            SizedBox(width: 12),
-            _StatCard(value: '180', label: 'Produits'),
-            SizedBox(width: 12),
-            _StatCard(value: '4.8',icon: Icons.star, label: 'Note moy.'),
+            _StatCard(
+              value: '${verifiedFarms.length}',
+              label: 'Fermes actives',
+              icon: Icons.storefront_rounded,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 12),
+            _StatCard(
+              value: '${products.length}',
+              label: 'Produits dispo.',
+              icon: Icons.agriculture_rounded,
+              color: AppColors.success,
+            ),
+            const SizedBox(width: 12),
+            _StatCard(
+              value: avgRating > 0 ? avgRating.toStringAsFixed(1) : '—',
+              label: 'Note moyenne',
+              icon: Icons.star_rounded,
+              color: AppColors.accent,
+            ),
           ],
-        ),
+        );
+      },
+    );
+  },
+),
         const SizedBox(height: 24),
 
         Row(children: [
@@ -338,7 +383,7 @@ class _ClientHomeBody extends StatelessWidget {
     ),
     itemCount: products.length,
     itemBuilder: (context, index) =>
-        _ProductCard(product: products[index]),
+        ProductCard(product: products[index]),
   );
 }),
       ],
@@ -382,45 +427,98 @@ class _SearchBar extends StatelessWidget {
 class _StatCard extends StatelessWidget {
   final String value;
   final String label;
-  final IconData? icon;
-   const _StatCard({required this.value, required this.label, this.icon});
+  final IconData icon;
+  final Color color;
+
+  const _StatCard({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(value,
-                      style: const TextStyle(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 220),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.07),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Rond décoratif dans le coin
+                Positioned(
+                  top: -10,
+                  right: -10,
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                // Contenu réel
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(icon, color: color, size: 18),
+                    ),
+                    const SizedBox(height: 10),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        value,
+                        style: const TextStyle(
                           fontFamily: 'Poppins',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary)),
-                  icon != null ? Icon(
-                   icon,
-                    color: AppColors.primary, 
-                    size: 18,
-                  ):const SizedBox()
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(label,
-                  style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 11,
-                      color: AppColors.textSecondary)),
-            ],
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -467,16 +565,18 @@ class _ProductCard extends StatelessWidget {
                         const BorderRadius.vertical(top: Radius.circular(14)),
                   ),
                   child: Center(
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      width: 70,
-                      height: 70,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Center(
-                        child: Icon(Icons.set_meal_rounded,
-                            color: AppColors.primary, size: 40),
-                      ),
-                    ),
+                    child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+    ? Image.network(
+        product.imageUrl!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: 100,
+        errorBuilder: (_, __, ___) => const Icon(
+            Icons.egg_rounded,
+            color: AppColors.primary, size: 40),
+      )
+    : const Icon(Icons.egg_rounded,
+        color: AppColors.primary, size: 40),
                   ),
                 ),
                 if (product.hasSanitaryCert)
@@ -548,7 +648,7 @@ class _ProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    product.pricefcfa as String,
+                    '${product.pricefcfa} FCFA',
                     style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 14,
@@ -650,46 +750,69 @@ class _NotifButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 48,
-      height: 48,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          IconButton(
-            icon: Icon(Icons.notifications_outlined, color: color),
-            onPressed: () {
-              Get.snackbar(
-                'Notifications',
-                '2 nouvelles notifications',
-                backgroundColor: AppColors.primary,
-                colorText: Colors.white,
-                snackPosition: SnackPosition.TOP,
-                icon: const Icon(Icons.notifications, color: Colors.white),
-                duration: const Duration(seconds: 2),
-              );
-            },
-          ),
-          Positioned(
-            right: 6,
-            top: 6,
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: const BoxDecoration(
-                  color: AppColors.error, shape: BoxShape.circle),
-              child: const Center(
-                child: Text('2',
-                    style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 8,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white)),
+    final auth = Get.find<AuthService>();
+    final firestore = Get.find<FirestoreService>();
+
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: firestore.getClientOrders(auth.uid),
+      builder: (context, snap) {
+        final orders = snap.data ?? [];
+        // Compte les commandes qui ont changé de statut récemment
+        // et nécessitent l'attention du client (livré = à confirmer)
+        final needsAttention = orders
+            .where((o) => o['status'] == 'delivered')
+            .length;
+
+        return SizedBox(
+          width: 48,
+          height: 48,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: Icon(Icons.notifications_outlined, color: color),
+                onPressed: () {
+                  if (needsAttention > 0) {
+                    Get.to(() => const OrdersScreen());
+                  } else {
+                    Get.snackbar(
+                      'Notifications',
+                      'Aucune nouvelle notification',
+                      backgroundColor: AppColors.primary,
+                      colorText: Colors.white,
+                      snackPosition: SnackPosition.TOP,
+                      icon: const Icon(Icons.notifications,
+                          color: Colors.white),
+                      duration: const Duration(seconds: 2),
+                    );
+                  }
+                },
               ),
-            ),
+              if (needsAttention > 0)
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: const BoxDecoration(
+                        color: AppColors.error, shape: BoxShape.circle),
+                    child: Center(
+                      child: Text(
+                        needsAttention > 9 ? '9+' : '$needsAttention',
+                        style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
