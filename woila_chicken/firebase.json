@@ -1,1 +1,37 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"woila-chicken","appId":"1:363180835744:android:7bd042ea0f7332b3e65ac5","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"woila-chicken","configurations":{"android":"1:363180835744:android:7bd042ea0f7332b3e65ac5","ios":"1:363180835744:ios:47eac523cf3213a4e65ac5","web":"1:363180835744:web:215ff70e0878ca25e65ac5"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "woila-chicken",
+          "appId": "1:363180835744:android:7bd042ea0f7332b3e65ac5",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "woila-chicken",
+          "configurations": {
+            "android": "1:363180835744:android:7bd042ea0f7332b3e65ac5",
+            "ios": "1:363180835744:ios:47eac523cf3213a4e65ac5",
+            "web": "1:363180835744:web:215ff70e0878ca25e65ac5"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "y",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
