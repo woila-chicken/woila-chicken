@@ -38,7 +38,8 @@ class RoleSelectionScreen extends StatelessWidget {
                               color: Colors.white,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                  color: AppColors.accent.withValues(alpha: 0.5),
+                                  color:
+                                      AppColors.accent.withValues(alpha: 0.5),
                                   width: 2),
                             ),
                             child: ClipOval(
@@ -138,12 +139,12 @@ class RoleSelectionScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         if (isAdmin)
-  _RoleCard(
-    icon: Icons.analytics_rounded,
-    role: UserRole.admin,
-    color: AppColors.adminColor,
-    onTap: () => Get.offAllNamed(AppRoutes.adminHome),
-  ),
+                          _RoleCard(
+                            icon: Icons.analytics_rounded,
+                            role: UserRole.admin,
+                            color: AppColors.adminColor,
+                            onTap: () => Get.offAllNamed(AppRoutes.adminHome),
+                          ),
                       ],
                     ),
                   ),
@@ -155,51 +156,84 @@ class RoleSelectionScreen extends StatelessWidget {
 
         // ── Mobile : classique ─────────────────────────────────
         mobile: Scaffold(
-          appBar: AppBar(
-            title: const Text('Qui êtes-vous ?'),
-            automaticallyImplyLeading: false,
-          ),
-          body: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 8),
-                Text(
-                  'Choisissez votre profil',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Votre expérience sera adaptée à votre rôle',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                _RoleCard(
-                  icon: Icons.shopping_cart_rounded,
-                  role: UserRole.client,
-                  color: AppColors.clientColor,
-                  onTap: () => Get.offAllNamed(AppRoutes.clientHome),
-                ),
-                _RoleCard(
-                  icon: Icons.agriculture_rounded,
-                  role: UserRole.eleveur,
-                  color: AppColors.eleveurColor,
-                  onTap: () => Get.offAllNamed(AppRoutes.eleveurHome),
-                ),
-                if (isAdmin)
-  _RoleCard(
-    icon: Icons.analytics_rounded,
-    role: UserRole.admin,
-    color: AppColors.adminColor,
-    onTap: () => Get.offAllNamed(AppRoutes.adminHome),
+  appBar: AppBar(
+    title: const Text('Qui êtes-vous ?'),
+    automaticallyImplyLeading: false,
   ),
+  body: Padding(
+    padding: const EdgeInsets.all(24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 8),
+        Text(
+          'Choisissez votre profil',
+          style: Theme.of(context).textTheme.headlineMedium,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Votre expérience sera adaptée à votre rôle',
+          style: Theme.of(context).textTheme.bodyMedium,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 32),
+
+        // Cards groupées sans espace
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.divider),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _RoleCard(
+                icon: Icons.shopping_cart_rounded,
+                role: UserRole.client,
+                color: AppColors.clientColor,
+                onTap: () =>
+                    Get.offAllNamed(AppRoutes.clientHome),
+                isFirst: true,
+                isLast: !isAdmin,
+              ),
+              Container(height: 0.5, color: AppColors.divider),
+              _RoleCard(
+                icon: Icons.agriculture_rounded,
+                role: UserRole.eleveur,
+                color: AppColors.eleveurColor,
+                onTap: () =>
+                    Get.offAllNamed(AppRoutes.eleveurHome),
+                isFirst: false,
+                isLast: !isAdmin,
+              ),
+              if (isAdmin) ...[
+                Container(height: 0.5, color: AppColors.divider),
+                _RoleCard(
+                  icon: Icons.analytics_rounded,
+                  role: UserRole.admin,
+                  color: AppColors.adminColor,
+                  onTap: () =>
+                      Get.offAllNamed(AppRoutes.adminHome),
+                  isFirst: false,
+                  isLast: true,
+                ),
               ],
-            ),
+            ],
           ),
         ),
+      ],
+    ),
+  ),
+),
       ),
     );
   }
@@ -236,69 +270,78 @@ class _RoleCard extends StatelessWidget {
   final UserRole role;
   final Color color;
   final VoidCallback onTap;
+  final bool isFirst;
+  final bool isLast;
 
   const _RoleCard({
     required this.icon,
     required this.role,
     required this.color,
     required this.onTap,
+    this.isFirst = false,
+    this.isLast = false,
   });
+
+  String get _label {
+    switch (role) {
+      case UserRole.client:  return 'Je suis client';
+      case UserRole.eleveur: return 'Je suis éleveur';
+      case UserRole.admin:   return 'Administration';
+    }
+  }
+
+  String get _sublabel {
+    switch (role) {
+      case UserRole.client:  return 'Acheter des produits';
+      case UserRole.eleveur: return 'Vendre mes produits';
+      case UserRole.admin:   return 'Gérer la plateforme';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.07),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            )
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Center(
-                child: Icon(icon, size: 28, color: color),
-              ),
+      borderRadius: BorderRadius.vertical(
+        top: isFirst ? const Radius.circular(15) : Radius.zero,
+        bottom: isLast ? const Radius.circular(15) : Radius.zero,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: 20, vertical: 18),
+        child: Row(children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    role.label,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    role.description,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_label,
+                    style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary)),
+                const SizedBox(height: 2),
+                Text(_sublabel,
+                    style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: AppColors.textSecondary)),
+              ],
             ),
-            Icon(Icons.arrow_forward_ios, color: color, size: 18),
-          ],
-        ),
+          ),
+          Icon(Icons.chevron_right_rounded,
+              color: color.withValues(alpha: 0.5), size: 20),
+        ]),
       ),
     );
   }

@@ -232,7 +232,7 @@ class _OrderTrackingScreenState
               padding: const EdgeInsets.symmetric(
                   horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -261,7 +261,7 @@ class _OrderTrackingScreenState
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.06),
+                color: AppColors.primary.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.set_meal_rounded,
@@ -379,10 +379,10 @@ class _OrderTrackingScreenState
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.07),
+              color: AppColors.success.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                  color: AppColors.success.withOpacity(0.3)),
+                  color: AppColors.success.withValues(alpha: 0.3)),
             ),
             child: Column(children: [
               const Icon(Icons.inventory_outlined,
@@ -450,10 +450,10 @@ class _OrderTrackingScreenState
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.08),
+              color: AppColors.success.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                  color: AppColors.success.withOpacity(0.3)),
+                  color: AppColors.success.withValues(alpha: 0.3)),
             ),
             child: Column(children: [
               const Icon(Icons.check_circle,

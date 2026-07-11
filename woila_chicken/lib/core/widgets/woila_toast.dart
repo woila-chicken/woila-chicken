@@ -140,11 +140,11 @@ class _WoilaToastWidgetState extends State<_WoilaToastWidget>
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       width: 0.5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.10),
+                      color: Colors.black.withValues(alpha: 0.10),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),
@@ -165,7 +165,7 @@ class _WoilaToastWidgetState extends State<_WoilaToastWidget>
                               width: 34,
                               height: 34,
                               decoration: BoxDecoration(
-                                color: _color.withOpacity(0.1),
+                                color: _color.withValues(alpha: 0.1),
                                 borderRadius:
                                     BorderRadius.circular(9),
                               ),
@@ -209,7 +209,7 @@ class _WoilaToastWidgetState extends State<_WoilaToastWidget>
                                 Icons.close_rounded,
                                 size: 15,
                                 color: AppColors.textSecondary
-                                    .withOpacity(0.5),
+                                    .withValues(alpha: 0.5),
                               ),
                             ),
                           ],
@@ -227,7 +227,7 @@ class _WoilaToastWidgetState extends State<_WoilaToastWidget>
                                 backgroundColor: Colors.transparent,
                                 valueColor:
                                     AlwaysStoppedAnimation<Color>(
-                                  _color.withOpacity(0.35),
+                                  _color.withValues(alpha: 0.35),
                                 ),
                               ),
                       ),

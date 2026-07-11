@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/models/product.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../controllers/catalogue_controller.dart';
-import 'product_detail_screen.dart';
 
 class CatalogueScreen extends StatelessWidget {
   const CatalogueScreen({super.key});

@@ -50,6 +50,30 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
 
   final _firestore = Get.find<FirestoreService>();
 
+  Color _statusColor(String status) {
+  switch (status) {
+    case 'pending':   return AppColors.warning;
+    case 'confirmed': return AppColors.primary;
+    case 'inRoute':   return Colors.blue;
+    case 'delivered': return AppColors.success;
+    case 'completed': return AppColors.textSecondary;
+    case 'disputed':  return AppColors.error;
+    default:          return AppColors.textSecondary;
+  }
+}
+
+String _statusLabel(String status) {
+  switch (status) {
+    case 'pending':   return 'En attente';
+    case 'confirmed': return 'Confirmée';
+    case 'inRoute':   return 'En route';
+    case 'delivered': return 'Livrée';
+    case 'completed': return 'Terminée';
+    case 'disputed':  return 'Litige';
+    default:          return status;
+  }
+}
+
   bool get _hasFilters =>
       _selectedFarm != 'Toutes' ||
       _dateFrom != null ||
@@ -427,6 +451,25 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
                             style: const TextStyle(
                                 fontFamily: 'Poppins', fontSize: 9),
                           ),
+                          const SizedBox(width: 6),
+  Container(
+    padding: const EdgeInsets.symmetric(
+        horizontal: 7, vertical: 2),
+    decoration: BoxDecoration(
+      color: _statusColor(order['status'] as String? ?? '')
+          .withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Text(
+      _statusLabel(order['status'] as String? ?? ''),
+      style: TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          color: _statusColor(
+              order['status'] as String? ?? '')),
+    ),
+  ),
                         ],
                       ),
                     ),
