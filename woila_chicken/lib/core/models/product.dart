@@ -11,6 +11,7 @@ class Product {
   final bool pickupAvailable;
   final String availability;
   final String? imageUrl;
+  final int stockQuantity;
 
   const Product({
     required this.id,
@@ -25,5 +26,6 @@ class Product {
     required this.pickupAvailable,
     required this.availability,
     this.imageUrl,
+    this.stockQuantity = 0,
   });
 }

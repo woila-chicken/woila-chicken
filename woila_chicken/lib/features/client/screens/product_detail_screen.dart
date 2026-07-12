@@ -356,10 +356,29 @@ class _OrderPanel extends StatelessWidget {
             const SizedBox(width: 16),
             _QuantityButton(
               icon: Icons.add,
-              onTap: () => onQuantityChanged(quantity + 1),
+              onTap: () =>  product.stockQuantity > 0 &&
+          quantity < product.stockQuantity
+      ? onQuantityChanged(quantity + 1)
+      : null,
             ),
           ],
         ),
+        const SizedBox(height: 6),
+Text(
+  product.stockQuantity > 0
+      ? '${product.stockQuantity} disponible${product.stockQuantity > 1 ? 's' : ''} en stock'
+      : 'Rupture de stock',
+  style: TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    color: product.stockQuantity > 0
+        ? AppColors.textSecondary
+        : AppColors.error,
+    fontWeight: product.stockQuantity == 0
+        ? FontWeight.w600
+        : FontWeight.normal,
+  ),
+),
         const SizedBox(height: 20),
         const Divider(),
         const SizedBox(height: 16),
@@ -413,6 +432,9 @@ const SizedBox(height: 10),
           child: ElevatedButton.icon(
             onPressed: () {
         // Option 1 — Commander directement
+        product.stockQuantity == 0
+      ? null
+      : () =>
         Get.to(
           () => CheckoutScreen(
             product: product,
@@ -423,7 +445,9 @@ const SizedBox(height: 10),
         );
       },
             icon: const Icon(Icons.shopping_cart_outlined),
-            label: Text('Commander — ${formatPrice(totalPrice)}'),
+            label: Text(product.stockQuantity == 0
+      ? 'Rupture de stock'
+      : 'Commander — ${formatPrice(totalPrice)}'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),

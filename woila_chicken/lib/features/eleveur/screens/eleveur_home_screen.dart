@@ -103,14 +103,19 @@ class _DesktopEleveurLayout extends StatelessWidget {
 ],
                 const Spacer(),
                 const Divider(height: 1),
-                _EleveurSidebarItem(
-                  icon: Icons.logout_outlined,
-                  label: 'Déconnexion',
-                  isSelected: false,
-                  onTap: () => Get.offAllNamed('/'),
-                  color: AppColors.error,
-                ),
-                const SizedBox(height: 12),
+                const Spacer(),
+const Divider(color: Colors.white24, height: 1),
+ListTile(
+  leading: const Icon(Icons.logout_outlined,
+      color: Colors.white70, size: 20),
+  title: const Text('Déconnexion',
+      style: TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 13,
+          color: Colors.white70)),
+  onTap: () => confirmLogout(context, Get.find<AuthService>()),
+),
+const SizedBox(height: 8),
               ],
             ),
           ),
@@ -136,6 +141,8 @@ class _DesktopEleveurLayout extends StatelessWidget {
       ),
     );
   }
+  
+  
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -179,6 +186,11 @@ class _MobileEleveurLayout extends StatelessWidget {
           ),
         ),
       ),
+      IconButton(
+    icon: const Icon(Icons.logout_outlined),
+    tooltip: 'Déconnexion',
+    onPressed: () => confirmLogout(context, Get.find<AuthService>()),
+  ),
     ],
   ),
 ],
@@ -219,6 +231,7 @@ class _MobileEleveurLayout extends StatelessWidget {
       ),
     );
   }
+  
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -704,3 +717,43 @@ class _EleveurSidebarItem extends StatelessWidget {
   }
 }
 
+
+
+void confirmLogout(BuildContext context, AuthService auth) {
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16)),
+      title: const Text('Se déconnecter ?',
+          style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w700)),
+      content: const Text(
+          'Vous serez redirigé vers l\'écran de connexion.',
+          style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 13,
+              color: AppColors.textSecondary)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Annuler',
+              style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: AppColors.textSecondary)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error),
+          onPressed: () {
+            Navigator.pop(context);
+            auth.logout();
+          },
+          child: const Text('Déconnecter',
+              style: TextStyle(fontFamily: 'Poppins')),
+        ),
+      ],
+    ),
+  );
+}

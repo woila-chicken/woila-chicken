@@ -345,6 +345,7 @@ class FirestoreService extends GetxService {
       pickupAvailable: toBool(d['pickupAvailable'], true),
       availability: toStr(d['availability'], 'immediate'),
       imageUrl: photoUrl.isNotEmpty ? photoUrl : imageUrl,
+      stockQuantity: (d['quantity'] as num?)?.toInt() ?? 0,
     );
   }
 }

@@ -137,33 +137,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Mon profil'),
-        actions: [
-          if (!_isLoading)
-            TextButton(
-              onPressed: _isSaving
-                  ? null
-                  : () async {
-                      if (_isEditing) await _save();
-                      setState(() => _isEditing = !_isEditing);
-                    },
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(
-                      _isEditing ? 'Enregistrer' : 'Modifier',
-                      style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600),
-                    ),
-            ),
-        ],
+  title: const Text('Mon profil'),
+  actions: [
+    TextButton(
+      onPressed: _isSaving
+          ? null
+          : () async {
+              if (_isEditing) await _save();
+              setState(() => _isEditing = !_isEditing);
+            },
+      child: Text(
+        _isEditing ? 'Enregistrer' : 'Modifier',
+        style: const TextStyle(
+            fontFamily: 'Poppins',
+            color: Colors.white,
+            fontWeight: FontWeight.w600),
       ),
+    ),
+    // Bouton déco rapide
+    IconButton(
+      icon: const Icon(Icons.logout_outlined),
+      tooltip: 'Déconnexion',
+      onPressed: () => _confirmLogout(context),
+    ),
+  ],
+),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
