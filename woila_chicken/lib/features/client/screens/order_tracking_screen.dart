@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/product_image.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/services/firestore_service.dart';
@@ -158,6 +159,8 @@ class _OrderTrackingScreenState
           final farmId = _str(data['farmId']);
           final total = _dbl(data['total']);
           final isDelivery = _bool(data['isDelivery'], true);
+          final productPhotoUrl =
+    data['productPhotoUrl'] as String?;
 
           return ResponsiveLayout(
             desktop: Center(
@@ -173,6 +176,7 @@ class _OrderTrackingScreenState
                   farmId: farmId,
                   total: total,
                   isDelivery: isDelivery,
+                  productPhotoUrl: productPhotoUrl,
                 ),
               ),
             ),
@@ -185,6 +189,7 @@ class _OrderTrackingScreenState
               farmId: farmId,
               total: total,
               isDelivery: isDelivery,
+              productPhotoUrl: productPhotoUrl,
             ),
           );
         },
@@ -201,6 +206,7 @@ class _OrderTrackingScreenState
     required String farmId,
     required double total,
     required bool isDelivery,
+    String? productPhotoUrl,
   }) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -257,16 +263,11 @@ class _OrderTrackingScreenState
             border: Border.all(color: AppColors.divider),
           ),
           child: Row(children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.set_meal_rounded,
-                  color: AppColors.primary, size: 28),
-            ),
+            ProductImage(
+  imageUrl: productPhotoUrl,
+  width: 56,
+  height: 56,
+),
             const SizedBox(width: 14),
             Expanded(
               child: Column(

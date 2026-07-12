@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/models/product.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/widgets/product_image.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import 'order_tracking_screen.dart';
 
@@ -170,21 +171,11 @@ class OrderConfirmationScreen extends StatelessWidget {
               border: Border.all(color: AppColors.divider),
             ),
             child: Row(children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Image.asset('assets/images/logo.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) =>
-                          const Center(child: Icon(Icons.set_meal_rounded, color: AppColors.primary, size: 24))),
-                ),
-              ),
+              ProductImage(
+  imageUrl: product.imageUrl,
+  width: 56,
+  height: 56,
+),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(

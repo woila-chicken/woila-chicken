@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/services/firestore_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/product_image.dart';
 import '../../../core/widgets/responsive_layout.dart';
 
 enum TxSortOption { dateDesc, dateAsc, montantDesc, montantAsc }
@@ -399,16 +400,12 @@ String _statusLabel(String status) {
             border: Border.all(color: AppColors.divider),
           ),
           child: Row(children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.swap_horiz,
-                  color: AppColors.primary, size: 20),
-            ),
+            ProductImage(
+  imageUrl: order['productPhotoUrl'] as String?,
+  width: 42,
+  height: 42,
+  iconSize: 20,
+),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

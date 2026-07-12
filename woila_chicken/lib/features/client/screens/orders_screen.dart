@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/product_image.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firestore_service.dart';
@@ -189,6 +190,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   canTrack: _canTrack(status),
                   orderId: order['id']?.toString() ?? '',
                   formatPrice: _formatPrice,
+                  productPhotoUrl:order['productPhotoUrl']
                 );
               },
             );
@@ -226,7 +228,7 @@ class _OrderCard extends StatelessWidget {
   final bool canTrack;
   final String orderId;
   final String Function(double) formatPrice;
-
+  final String? productPhotoUrl;
   const _OrderCard({
     required this.ref,
     required this.productName,
@@ -237,7 +239,7 @@ class _OrderCard extends StatelessWidget {
     required this.statusColor,
     required this.canTrack,
     required this.orderId,
-    required this.formatPrice,
+    required this.formatPrice, this.productPhotoUrl,
   });
 
   @override
@@ -277,16 +279,11 @@ class _OrderCard extends StatelessWidget {
           ]),
           const SizedBox(height: 10),
           Row(children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.set_meal_rounded,
-                  color: AppColors.primary, size: 26),
-            ),
+            ProductImage(
+  imageUrl: productPhotoUrl,
+  width: 48,
+  height: 48,
+),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

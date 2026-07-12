@@ -81,6 +81,7 @@ Future<void> _pay() async {
 
     final orderId = await firestore.createOrder({
       'clientId': auth.uid,
+      'productPhotoUrl': widget.product.imageUrl ?? '',
       'clientName': _nameCtrl.text.trim().isEmpty
           ? 'Client'
           : _nameCtrl.text.trim(),

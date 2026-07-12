@@ -462,31 +462,41 @@ class _StatCard extends StatelessWidget {
               children: [
                 // Rond décoratif dans le coin
                 Positioned(
-                  top: -10,
-                  right: -10,
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
+  top: -8,
+  right: -8,
+  child: LayoutBuilder(
+    builder: (context, constraints) {
+      final size = MediaQuery.of(context).size.width < 400 ? 36.0 : 48.0;
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          shape: BoxShape.circle,
+        ),
+      );
+    },
+  ),
+),
                 // Contenu réel
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(icon, color: color, size: 18),
-                    ),
+                    Builder(
+  builder: (context) {
+    final isSmall = MediaQuery.of(context).size.width < 400;
+    return Container(
+      width: isSmall ? 28 : 34,
+      height: isSmall ? 28 : 34,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(isSmall ? 8 : 10),
+      ),
+      child: Icon(icon, color: color, size: isSmall ? 14 : 18),
+    );
+  },
+),
                     const SizedBox(height: 10),
                     FittedBox(
                       fit: BoxFit.scaleDown,

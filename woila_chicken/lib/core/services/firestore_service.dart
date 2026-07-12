@@ -49,6 +49,7 @@ class FirestoreService extends GetxService {
 
     final doc = await _db.collection('orders').add({
       ...data,
+      'productPhotoUrl': data['productPhotoUrl'] ?? '',
       'ref': ref,
       'commission': commission,
       'status': 'pending',

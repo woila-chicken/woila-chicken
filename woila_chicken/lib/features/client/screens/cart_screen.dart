@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/product_image.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../controllers/cart_controller.dart';
 import 'checkout_screen.dart';
@@ -187,24 +188,11 @@ class _CartItemCard extends StatelessWidget {
         children: [
           Row(children: [
             // Image
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Center(
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.set_meal_rounded, color: AppColors.primary, size: 28),
-                ),
-              ),
-            ),
+            ProductImage(
+  imageUrl: item.product.imageUrl,
+  width: 64,
+  height: 64,
+),
             const SizedBox(width: 12),
 
             // Infos
