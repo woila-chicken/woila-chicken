@@ -6,6 +6,7 @@ import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firestore_service.dart';
 import '../../../core/widgets/woila_toast.dart';
+import 'eleveur_home_screen.dart';
 
 class FarmProfileScreen extends StatefulWidget {
   const FarmProfileScreen({super.key});
@@ -159,6 +160,11 @@ class _FarmProfileScreenState extends State<FarmProfileScreen> {
                           color: Color(0xFF412402)),
                     ),
             ),
+                 IconButton(
+    icon: const Icon(Icons.logout_outlined),
+    tooltip: 'Déconnexion',
+    onPressed: () => confirmLogout(context, Get.find<AuthService>()),
+  ),
         ],
       ),
       body: _isLoading

@@ -170,27 +170,27 @@ class _MobileEleveurLayout extends StatelessWidget {
         icon: const Icon(Icons.notifications_outlined),
         onPressed: () => Get.to(() => const EleveurOrdersScreen()),
       ),
-      Positioned(
-        right: 6, top: 6,
-        child: Container(
-          width: 14, height: 14,
-          decoration: const BoxDecoration(
-              color: AppColors.error, shape: BoxShape.circle),
-          child: const Center(
-            child: Text('2',
-                style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 8,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white)),
-          ),
-        ),
-      ),
-      IconButton(
-    icon: const Icon(Icons.logout_outlined),
-    tooltip: 'Déconnexion',
-    onPressed: () => confirmLogout(context, Get.find<AuthService>()),
-  ),
+  //     if (pending > 0)
+  // Positioned(
+  //   right: 6,
+  //   top: 6,
+  //   child: Container(
+  //     width: 14,
+  //     height: 14,
+  //     decoration: const BoxDecoration(
+  //         color: AppColors.error, shape: BoxShape.circle),
+  //     child: Center(
+  //       child: Text(
+  //         pending > 9 ? '9+' : '$pending',
+  //         style: const TextStyle(
+  //             fontFamily: 'Poppins',
+  //             fontSize: 8,
+  //             fontWeight: FontWeight.w700,
+  //             color: Colors.white),
+  //       ),
+  //     ),
+  //   ),
+  // ),
     ],
   ),
 ],

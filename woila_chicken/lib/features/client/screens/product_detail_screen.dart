@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
@@ -103,14 +104,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   child: SingleChildScrollView(
                     child: _OrderPanel(
                       product: widget.product,
-                      wantsDelivery: _wantsDelivery,
-                      quantity: _quantity,
-                      deliveryFee: _deliveryFee,
-                      totalPrice: _totalPrice,
-                      formatPrice: _formatPrice,
-                      onDeliveryChanged: (v) =>
-                          setState(() => _wantsDelivery = v),
-                      onQuantityChanged: (v) => setState(() => _quantity = v),
                     ),
                   ),
                 ),
@@ -144,14 +137,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 children: [
                   _OrderPanel(
                     product: widget.product,
-                    wantsDelivery: _wantsDelivery,
-                    quantity: _quantity,
-                    deliveryFee: _deliveryFee,
-                    totalPrice: _totalPrice,
-                    formatPrice: _formatPrice,
-                    onDeliveryChanged: (v) =>
-                        setState(() => _wantsDelivery = v),
-                    onQuantityChanged: (v) => setState(() => _quantity = v),
                   ),
                   const SizedBox(height: 16),
                   _FarmCard(product: widget.product),
@@ -239,221 +224,341 @@ class _ProductImage extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────
 //  Panneau de commande
 // ─────────────────────────────────────────────────────────────────
-class _OrderPanel extends StatelessWidget {
+class _OrderPanel extends StatefulWidget {
   final Product product;
-  final bool wantsDelivery;
-  final int quantity;
-  final double deliveryFee;
-  final double totalPrice;
-  final String Function(double) formatPrice;
-  final ValueChanged<bool> onDeliveryChanged;
-  final ValueChanged<int> onQuantityChanged;
+  const _OrderPanel({required this.product});
 
-  const _OrderPanel({
-    required this.product,
-    required this.wantsDelivery,
-    required this.quantity,
-    required this.deliveryFee,
-    required this.totalPrice,
-    required this.formatPrice,
-    required this.onDeliveryChanged,
-    required this.onQuantityChanged,
-  });
+  @override
+  State<_OrderPanel> createState() => _OrderPanelState();
+}
+
+class _OrderPanelState extends State<_OrderPanel> {
+  int quantity = 1;
+  bool wantsDelivery = true;
+
+  String formatPrice(double p) =>
+      '${p.toStringAsFixed(0).replaceAllMapped(
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+            (m) => '${m[1]} ',
+          )} FCFA';
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Nom + prix
-        Text(
-          '${product.name} — ${product.weightKg} kg',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          formatPrice(product.pricefcfa),
-          style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 26,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary),
-        ),
-        const SizedBox(height: 20),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('products')
+          .doc(widget.product.id)
+          .snapshots(),
+      builder: (context, snap) {
+        // Stock en temps réel depuis Firestore
+        int stockQty = widget.product.stockQuantity;
+        if (snap.hasData && snap.data!.exists) {
+          final d = snap.data!.data() as Map<String, dynamic>;
+          stockQty = (d['quantity'] as num?)?.toInt() ?? 0;
+        }
 
-        // Infos clés
-        _InfoRow(
-          icon: Icons.scale_outlined,
-          label: 'Poids',
-          value: '${product.weightKg} kg',
-        ),
-        _InfoRow(
-  icon: Icons.verified_rounded,
-  label: 'État sanitaire',
-  value: product.hasSanitaryCert ? 'Certifié' : 'Non certifié',
-  valueColor:
-      product.hasSanitaryCert ? AppColors.success : AppColors.error,
-),
-        _InfoRow(
-          icon: Icons.access_time_outlined,
-          label: 'Disponibilité',
-          value: product.availability,
-        ),
-        const SizedBox(height: 20),
-        const Divider(),
-        const SizedBox(height: 16),
+        final double totalPrice =
+            widget.product.pricefcfa * quantity +
+                (wantsDelivery &&
+                        widget.product.deliveryAvailable
+                    ? 500
+                    : 0);
 
-        // Choix logistique
-        Text('Mode de retrait', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 12),
-        Row(
+        final bool canOrder =
+            stockQty > 0 && quantity <= stockQty;
+
+        // Corriger quantity si dépasse le stock
+        if (quantity > stockQty && stockQty > 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => quantity = stockQty);
+          });
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (product.deliveryAvailable)
-              Expanded(
-                child: _LogisticOption(
-                  icon: Icons.local_shipping_outlined,
-                  label: 'Livraison à domicile',
-                  sublabel: '+ 500 FCFA',
-                  isSelected: wantsDelivery,
-                  onTap: () => onDeliveryChanged(true),
-                ),
-              ),
-            if (product.deliveryAvailable && product.pickupAvailable)
-              const SizedBox(width: 12),
-            if (product.pickupAvailable)
-              Expanded(
-                child: _LogisticOption(
-                  icon: Icons.store_outlined,
-                  label: 'Retrait à la ferme',
-                  sublabel: 'Gratuit',
-                  isSelected: !wantsDelivery,
-                  onTap: () => onDeliveryChanged(false),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 20),
-
-        // Quantité
-        Text('Quantité', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _QuantityButton(
-              icon: Icons.remove,
-              onTap:
-                  quantity > 1 ? () => onQuantityChanged(quantity - 1) : null,
-            ),
-            const SizedBox(width: 16),
+            // Nom + prix
             Text(
-              '$quantity',
+              widget.product.name,
               style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary),
             ),
-            const SizedBox(width: 16),
-            _QuantityButton(
-              icon: Icons.add,
-              onTap: () =>  product.stockQuantity > 0 &&
-          quantity < product.stockQuantity
-      ? onQuantityChanged(quantity + 1)
-      : null,
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-Text(
-  product.stockQuantity > 0
-      ? '${product.stockQuantity} disponible${product.stockQuantity > 1 ? 's' : ''} en stock'
-      : 'Rupture de stock',
-  style: TextStyle(
-    fontFamily: 'Poppins',
-    fontSize: 11,
-    color: product.stockQuantity > 0
-        ? AppColors.textSecondary
-        : AppColors.error,
-    fontWeight: product.stockQuantity == 0
-        ? FontWeight.w600
-        : FontWeight.normal,
-  ),
-),
-        const SizedBox(height: 20),
-        const Divider(),
-        const SizedBox(height: 16),
-
-        // Récapitulatif prix
-        _PriceRow(
-            label: '${product.name} × $quantity',
-            value: formatPrice(product.pricefcfa * quantity)),
-        if (wantsDelivery && product.deliveryAvailable)
-          _PriceRow(
-              label: 'Frais de livraison', value: formatPrice(deliveryFee)),
-        const Divider(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Total',
-                style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary)),
+            const SizedBox(height: 8),
             Text(
-              formatPrice(totalPrice),
+              formatPrice(widget.product.pricefcfa),
               style: const TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
                   color: AppColors.primary),
             ),
+            const SizedBox(height: 16),
+
+            // Stock indicator
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: stockQty == 0
+                    ? AppColors.error.withOpacity(0.08)
+                    : stockQty <= 3
+                        ? AppColors.warning.withOpacity(0.08)
+                        : AppColors.success.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    stockQty == 0
+                        ? Icons.remove_circle_outline
+                        : stockQty <= 3
+                            ? Icons.warning_amber_rounded
+                            : Icons.check_circle_outline,
+                    size: 14,
+                    color: stockQty == 0
+                        ? AppColors.error
+                        : stockQty <= 3
+                            ? AppColors.warning
+                            : AppColors.success,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    stockQty == 0
+                        ? 'Rupture de stock'
+                        : stockQty <= 3
+                            ? 'Plus que $stockQty en stock !'
+                            : '$stockQty disponibles',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: stockQty == 0
+                          ? AppColors.error
+                          : stockQty <= 3
+                              ? AppColors.warning
+                              : AppColors.success,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Sélecteur quantité
+            if (stockQty > 0) ...[
+              const Text('Quantité',
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary)),
+              const SizedBox(height: 8),
+              Row(children: [
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.divider),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove_rounded),
+                      iconSize: 18,
+                      color: quantity > 1
+                          ? AppColors.primary
+                          : AppColors.divider,
+                      onPressed: quantity > 1
+                          ? () => setState(() => quantity--)
+                          : null,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('$quantity',
+                          style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary)),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_rounded),
+                      iconSize: 18,
+                      color: quantity < stockQty
+                          ? AppColors.primary
+                          : AppColors.divider,
+                      onPressed: quantity < stockQty
+                          ? () => setState(() => quantity++)
+                          : null,
+                    ),
+                  ]),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Max : $stockQty',
+                  style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      color: AppColors.textSecondary),
+                ),
+              ]),
+              const SizedBox(height: 16),
+            ],
+
+            // Mode livraison
+            if (widget.product.deliveryAvailable ||
+                widget.product.pickupAvailable) ...[
+              const Text('Mode de retrait',
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary)),
+              const SizedBox(height: 8),
+              Row(children: [
+                if (widget.product.deliveryAvailable)
+                  Expanded(
+                    child: _ModeBtn(
+                      icon: Icons.local_shipping_outlined,
+                      label: 'Livraison',
+                      sublabel: '+500 FCFA',
+                      isSelected: wantsDelivery,
+                      onTap: () => setState(() => wantsDelivery = true),
+                    ),
+                  ),
+                if (widget.product.deliveryAvailable &&
+                    widget.product.pickupAvailable)
+                  const SizedBox(width: 10),
+                if (widget.product.pickupAvailable)
+                  Expanded(
+                    child: _ModeBtn(
+                      icon: Icons.storefront_outlined,
+                      label: 'Retrait',
+                      sublabel: 'Gratuit',
+                      isSelected: !wantsDelivery,
+                      onTap: () => setState(() => wantsDelivery = false),
+                    ),
+                  ),
+              ]),
+              const SizedBox(height: 20),
+            ],
+
+            // Bouton ajouter au panier
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: canOrder
+                    ? () {
+                        Get.find<CartController>().addProduct(
+                          widget.product,
+                          wantsDelivery: wantsDelivery,
+                        );
+                      }
+                    : null,
+                icon: const Icon(
+                    Icons.add_shopping_cart_outlined, size: 18),
+                label: const Text('Ajouter au panier',
+                    style: TextStyle(fontFamily: 'Poppins')),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Bouton commander
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: canOrder
+                    ? () => Get.to(
+                          () => CheckoutScreen(
+                            product: widget.product,
+                            quantity: quantity,
+                            wantsDelivery: wantsDelivery,
+                          ),
+                          transition: Transition.rightToLeft,
+                        )
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  // Grisé automatiquement quand onPressed est null
+                ),
+                child: Text(
+                  stockQty == 0
+                      ? 'Rupture de stock'
+                      : 'Commander — ${formatPrice(totalPrice)}',
+                  style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
           ],
-        ),
-        const SizedBox(height: 20),
-        SizedBox(
-  width: double.infinity,
-  child: OutlinedButton.icon(
-    onPressed: () {
-      Get.find<CartController>().addProduct(
-        product,
-        wantsDelivery: wantsDelivery,
-      );
-    },
-    icon: const Icon(Icons.add_shopping_cart_outlined, size: 18),
-    label: const Text('Ajouter au panier',
-        style: TextStyle(fontFamily: 'Poppins')),
-  ),
-),
-const SizedBox(height: 10),
-        // Bouton commander
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-        // Option 1 — Commander directement
-        product.stockQuantity == 0
-      ? null
-      : () =>
-        Get.to(
-          () => CheckoutScreen(
-            product: product,
-            quantity: quantity,
-            wantsDelivery: wantsDelivery,
-          ),
-          transition: Transition.rightToLeft,
         );
       },
-            icon: const Icon(Icons.shopping_cart_outlined),
-            label: Text(product.stockQuantity == 0
-      ? 'Rupture de stock'
-      : 'Commander — ${formatPrice(totalPrice)}'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
+    );
+  }
+}
+
+class _ModeBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String sublabel;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ModeBtn({
+    required this.icon,
+    required this.label,
+    required this.sublabel,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            vertical: 12, horizontal: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.06)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color:
+                isSelected ? AppColors.primary : AppColors.divider,
+            width: isSelected ? 1.5 : 1,
           ),
         ),
-      ],
+        child: Column(children: [
+          Icon(icon,
+              size: 18,
+              color: isSelected
+                  ? AppColors.primary
+                  : AppColors.textSecondary),
+          const SizedBox(height: 4),
+          Text(label,
+              style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  fontWeight: isSelected
+                      ? FontWeight.w600
+                      : FontWeight.normal,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textPrimary)),
+          Text(sublabel,
+              style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 10,
+                  color: AppColors.textSecondary)),
+        ]),
+      ),
     );
   }
 }

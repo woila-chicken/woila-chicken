@@ -239,32 +239,53 @@ class _LoginForm extends StatelessWidget {
 
         // Erreur Firebase
         Obx(() => auth.errorMessage.value.isNotEmpty
-            ? Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: AppColors.error.withValues(alpha: 0.3)),
-                ),
-                child: Row(children: [
-                  const Icon(Icons.error_outline,
-                      color: AppColors.error, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      auth.errorMessage.value,
-                      style: const TextStyle(
+    ? Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.error.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: AppColors.error.withOpacity(0.2)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info_outline,
+                color: AppColors.error, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Connexion impossible',
+                      style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 12,
-                          color: AppColors.error),
-                    ),
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.error)),
+                  const SizedBox(height: 3),
+                  Text(
+                    auth.errorMessage.value,
+                    style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: AppColors.error,
+                        height: 1.4),
                   ),
-                ]),
-              )
-            : const SizedBox.shrink()),
-
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: () => auth.errorMessage.value = '',
+              child: const Icon(Icons.close_rounded,
+                  size: 14,
+                  color: AppColors.error),
+            ),
+          ],
+        ),
+      )
+    : const SizedBox.shrink()),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(

@@ -7,83 +7,8 @@ import '../../../core/services/auth_service.dart';
 import '../../../core/services/firestore_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/widgets/woila_toast.dart';
+import '../controllers/stock_controller.dart';
 
-class StockController extends GetxController {
-  final _firestore = Get.find<FirestoreService>();
-  final _auth = Get.find<AuthService>();
-  final items = <Map<String, dynamic>>[].obs;
-  final isLoading = true.obs;
-  final farmId = Rx<String?>(null);
-  String farmName = '';
-
-  @override
-  void onInit() {
-    super.onInit();
-    _loadFarm();
-  }
-
-  Future<void> _loadFarm() async {
-    final farm = await _firestore.getFarmByOwner(_auth.uid);
-    if (farm == null) {
-      isLoading.value = false;
-      return;
-    }
-    farmId.value = farm['id'];
-    farmName = farm['name'] ?? '';
-    _firestore.getProducts(farmId: farmId.value).listen((products) {
-      items.value = products
-          .map((p) => {
-                'id': p.id,
-                'name': p.name,
-                'weightKg': p.weightKg,
-                'priceFcfa': p.pricefcfa,
-                'quantity': 0,
-                'isCertified': p.hasSanitaryCert,
-                'photoUrl': p.imageUrl ?? '',
-              })
-          .toList();
-      isLoading.value = false;
-    });
-  }
-
-  Future<void> addOrUpdate({
-    String? id,
-    required String name,
-    required double weightKg,
-    required double priceFcfa,
-    required int quantity,
-    required bool isCertified,
-    required bool deliveryAvailable,
-    required bool pickupAvailable,
-    String? description,
-    String? photoUrl,
-  }) async {
-    final payload = {
-      'farmId': farmId.value,
-      'farmName': farmName,
-      'name': name,
-      'weightKg': weightKg,
-      'priceFcfa': priceFcfa,
-      'quantity': quantity,
-      'hasSanitaryCert': isCertified,
-      'deliveryAvailable': deliveryAvailable,
-      'pickupAvailable': pickupAvailable,
-      'availability': 'immediate',
-      'farmRating': 0,
-      'description': description ?? '',
-      if (photoUrl != null && photoUrl.isNotEmpty) 'photoUrl': photoUrl,
-    };
-    if (id != null) {
-      await _firestore.updateProduct(id, payload);
-    } else {
-      await _firestore.addProduct(payload);
-    }
-  }
-
-  Future<void> deleteItem(String id) async {
-    await _firestore.deleteProduct(id);
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────
 //  ÉCRAN PRINCIPAL STOCK
