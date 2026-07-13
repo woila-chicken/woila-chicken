@@ -17,15 +17,7 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _wantsDelivery = true;
-  int _quantity = 1;
-
-  double get _deliveryFee => _wantsDelivery ? 500 : 0;
-  double get _totalPrice =>
-      (widget.product.pricefcfa + _deliveryFee) * _quantity;
-
-  String _formatPrice(double p) =>
-      '${p.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]} ')} FCFA';
-
+ 
   @override
   void initState() {
     super.initState();
@@ -303,10 +295,10 @@ class _OrderPanelState extends State<_OrderPanel> {
                   horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: stockQty == 0
-                    ? AppColors.error.withOpacity(0.08)
+                    ? AppColors.error.withValues(alpha: 0.08)
                     : stockQty <= 3
-                        ? AppColors.warning.withOpacity(0.08)
-                        : AppColors.success.withOpacity(0.08),
+                        ? AppColors.warning.withValues(alpha: 0.08)
+                        : AppColors.success.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -526,7 +518,7 @@ class _ModeBtn extends StatelessWidget {
             vertical: 12, horizontal: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.06)
+              ? AppColors.primary.withValues(alpha: 0.06)
               : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(

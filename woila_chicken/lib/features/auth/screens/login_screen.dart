@@ -243,10 +243,10 @@ class _LoginForm extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.error.withOpacity(0.06),
+          color: AppColors.error.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: AppColors.error.withOpacity(0.2)),
+              color: AppColors.error.withValues(alpha: 0.2)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
