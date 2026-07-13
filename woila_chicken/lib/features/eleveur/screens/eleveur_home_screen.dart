@@ -306,7 +306,7 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── En-tête bonjour ────────────────────────────────────
-        Text('Bonjour, $_farmName',
+        Text(_farmName,
             style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 4),
         Text('Voici un aperçu de votre activité',
