@@ -3,12 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/responsive_layout.dart';
-import '../../../core/services/auth_service.dart';
-import '../../../core/services/firestore_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/widgets/woila_toast.dart';
 import '../controllers/stock_controller.dart';
-
 
 // ─────────────────────────────────────────────────────────────────
 //  ÉCRAN PRINCIPAL STOCK
@@ -27,15 +24,15 @@ class StockScreen extends StatelessWidget {
         foregroundColor: const Color(0xFF412402),
       ),
       floatingActionButton: Obx(() {
-  if (ctrl.farmId.value == null) return const SizedBox.shrink();
-  return FloatingActionButton.extended(
-    onPressed: () => _openForm(context, ctrl, null),
-    backgroundColor: AppColors.primary,
-    icon: const Icon(Icons.add, color: Colors.white),
-    label: const Text('Ajouter',
-        style: TextStyle(fontFamily: 'Poppins', color: Colors.white)),
-  );
-}),
+        if (ctrl.farmId.value == null) return const SizedBox.shrink();
+        return FloatingActionButton.extended(
+          onPressed: () => _openForm(context, ctrl, null),
+          backgroundColor: AppColors.primary,
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: const Text('Ajouter',
+              style: TextStyle(fontFamily: 'Poppins', color: Colors.white)),
+        );
+      }),
       body: ResponsiveLayout(
         desktop: Center(
           child: ConstrainedBox(
@@ -89,8 +86,7 @@ class StockScreen extends StatelessWidget {
           final quantity = (item['quantity'] as num?)?.toInt() ?? 0;
           final isLow = quantity <= 2;
           final isCertified = item['isCertified'] as bool? ?? false;
-          final priceFcfa =
-              (item['priceFcfa'] as num?)?.toDouble() ?? 0;
+          final priceFcfa = (item['priceFcfa'] as num?)?.toDouble() ?? 0;
           final photoUrl = item['photoUrl'] as String? ?? '';
 
           return Container(
@@ -118,9 +114,10 @@ class StockScreen extends StatelessWidget {
                   child: photoUrl.isNotEmpty
                       ? Image.network(photoUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.egg_rounded,
-                                  color: AppColors.primary, size: 28))
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.egg_rounded,
+                              color: AppColors.primary,
+                              size: 28))
                       : const Icon(Icons.egg_rounded,
                           color: AppColors.primary, size: 28),
                 ),
@@ -130,72 +127,70 @@ class StockScreen extends StatelessWidget {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  Text(item['name'] ?? '',
-                      style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary)),
-                  const SizedBox(height: 3),
-                  Row(children: [
-                    Text('${priceFcfa.toInt()} FCFA',
-                        style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary)),
-                    const SizedBox(width: 10),
-                    if (isCertified)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.verified_rounded,
-                                size: 11,
-                                color: AppColors.success),
-                            SizedBox(width: 3),
-                            Text('Certifié',
-                                style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 10,
-                                    color: AppColors.success,
-                                    fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ),
-                  ]),
-                  const SizedBox(height: 3),
-                  Row(children: [
-                    Icon(
-                      isLow
-                          ? Icons.warning_amber_rounded
-                          : Icons.inventory_2_outlined,
-                      size: 13,
-                      color: isLow
-                          ? AppColors.warning
-                          : AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Stock : $quantity${isLow ? ' — Faible' : ''}',
-                      style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12,
+                      Text(item['name'] ?? '',
+                          style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary)),
+                      const SizedBox(height: 3),
+                      Row(children: [
+                        Text('${priceFcfa.toInt()} FCFA',
+                            style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary)),
+                        const SizedBox(width: 10),
+                        if (isCertified)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.verified_rounded,
+                                    size: 11, color: AppColors.success),
+                                SizedBox(width: 3),
+                                Text('Certifié',
+                                    style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 10,
+                                        color: AppColors.success,
+                                        fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                      ]),
+                      const SizedBox(height: 3),
+                      Row(children: [
+                        Icon(
+                          isLow
+                              ? Icons.warning_amber_rounded
+                              : Icons.inventory_2_outlined,
+                          size: 13,
                           color: isLow
                               ? AppColors.warning
                               : AppColors.textSecondary,
-                          fontWeight: isLow
-                              ? FontWeight.w600
-                              : FontWeight.normal),
-                    ),
-                  ]),
-                ]),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Stock : $quantity${isLow ? ' — Faible' : ''}',
+                          style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 12,
+                              color: isLow
+                                  ? AppColors.warning
+                                  : AppColors.textSecondary,
+                              fontWeight:
+                                  isLow ? FontWeight.w600 : FontWeight.normal),
+                        ),
+                      ]),
+                    ]),
               ),
               Column(children: [
                 IconButton(
@@ -233,8 +228,7 @@ class StockScreen extends StatelessWidget {
           position: Tween<Offset>(
             begin: const Offset(1, 0),
             end: Offset.zero,
-          ).animate(CurvedAnimation(
-              parent: anim, curve: Curves.easeOutCubic)),
+          ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
           child: child,
         ),
         pageBuilder: (ctx, _, __) => Align(
@@ -266,32 +260,26 @@ class StockScreen extends StatelessWidget {
     }
   }
 
-  void _confirmDelete(BuildContext context, StockController ctrl,
-      Map<String, dynamic> item) {
+  void _confirmDelete(
+      BuildContext context, StockController ctrl, Map<String, dynamic> item) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Supprimer ce produit ?',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700)),
+            style:
+                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
         content: Text('${item['name']} sera retiré de votre catalogue.',
-            style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13)),
+            style: const TextStyle(fontFamily: 'Poppins', fontSize: 13)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler',
                 style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontFamily: 'Poppins')),
+                    color: AppColors.textSecondary, fontFamily: 'Poppins')),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
               await ctrl.deleteItem(item['id']);
               if (!context.mounted) return;
@@ -400,8 +388,8 @@ class _ProductFormPanelState extends State<_ProductFormPanel> {
                   color: AppColors.textPrimary)),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.close_rounded,
-                color: AppColors.textSecondary),
+            icon:
+                const Icon(Icons.close_rounded, color: AppColors.textSecondary),
             onPressed: widget.onClose,
           ),
         ]),
@@ -484,11 +472,10 @@ class _ProductFormPanelState extends State<_ProductFormPanel> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _form.weightCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                        RegExp(r'^\d*\.?\d*')),
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                   ],
                   decoration: const InputDecoration(hintText: '2.0'),
                   validator: (v) => v!.isEmpty ? 'Requis' : null,
@@ -522,8 +509,8 @@ class _ProductFormPanelState extends State<_ProductFormPanel> {
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
           ],
-          decoration: const InputDecoration(
-              hintText: '3500', suffixText: 'FCFA'),
+          decoration:
+              const InputDecoration(hintText: '3500', suffixText: 'FCFA'),
           validator: (v) => v!.isEmpty ? 'Requis' : null,
         ),
         const SizedBox(height: 16),
@@ -534,8 +521,8 @@ class _ProductFormPanelState extends State<_ProductFormPanel> {
         TextFormField(
           controller: _form.descCtrl,
           maxLines: 3,
-          decoration: const InputDecoration(
-              hintText: 'Décrivez votre produit...'),
+          decoration:
+              const InputDecoration(hintText: 'Décrivez votre produit...'),
         ),
         const SizedBox(height: 16),
 
@@ -567,8 +554,7 @@ class _ProductFormPanelState extends State<_ProductFormPanel> {
 
         // Certification
         Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: AppColors.background,
             borderRadius: BorderRadius.circular(12),
@@ -595,8 +581,7 @@ class _ProductFormPanelState extends State<_ProductFormPanel> {
             Switch(
               value: _form.isCertified,
               activeColor: AppColors.success,
-              onChanged: (v) =>
-                  setState(() => _form.isCertified = v),
+              onChanged: (v) => setState(() => _form.isCertified = v),
             ),
           ]),
         ),
@@ -707,8 +692,7 @@ class _ProductFormPageState extends State<_ProductFormPage> {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Color(0xFF412402)))
+                        strokeWidth: 2, color: Color(0xFF412402)))
                 : Text(
                     isEdit ? 'Enregistrer' : 'Ajouter',
                     style: const TextStyle(
@@ -737,8 +721,8 @@ class _ProductFormPageState extends State<_ProductFormPage> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _form.nameCtrl,
-                decoration: const InputDecoration(
-                    hintText: 'Ex: Poulet fermier'),
+                decoration:
+                    const InputDecoration(hintText: 'Ex: Poulet fermier'),
                 validator: (v) => v!.isEmpty ? 'Requis' : null,
               ),
               const SizedBox(height: 14),
@@ -751,17 +735,14 @@ class _ProductFormPageState extends State<_ProductFormPage> {
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _form.weightCtrl,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(
-                                decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         inputFormatters: [
                           FilteringTextInputFormatter.allow(
                               RegExp(r'^\d*\.?\d*')),
                         ],
-                        decoration:
-                            const InputDecoration(hintText: '2.0'),
-                        validator: (v) =>
-                            v!.isEmpty ? 'Requis' : null,
+                        decoration: const InputDecoration(hintText: '2.0'),
+                        validator: (v) => v!.isEmpty ? 'Requis' : null,
                       ),
                     ],
                   ),
@@ -775,8 +756,7 @@ class _ProductFormPageState extends State<_ProductFormPage> {
                       const SizedBox(height: 6),
                       _QuantityStepper(
                         value: _form.quantity,
-                        onChanged: (v) =>
-                            setState(() => _form.quantity = v),
+                        onChanged: (v) => setState(() => _form.quantity = v),
                       ),
                     ],
                   ),
@@ -791,8 +771,8 @@ class _ProductFormPageState extends State<_ProductFormPage> {
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
                 ],
-                decoration: const InputDecoration(
-                    hintText: '3500', suffixText: 'FCFA'),
+                decoration:
+                    const InputDecoration(hintText: '3500', suffixText: 'FCFA'),
                 validator: (v) => v!.isEmpty ? 'Requis' : null,
               ),
               const SizedBox(height: 14),
@@ -814,8 +794,7 @@ class _ProductFormPageState extends State<_ProductFormPage> {
                     label: 'Livraison',
                     isSelected: _form.deliveryAvailable,
                     onTap: () => setState(() =>
-                        _form.deliveryAvailable =
-                            !_form.deliveryAvailable),
+                        _form.deliveryAvailable = !_form.deliveryAvailable),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -824,16 +803,15 @@ class _ProductFormPageState extends State<_ProductFormPage> {
                     icon: Icons.storefront_outlined,
                     label: 'Retrait ferme',
                     isSelected: _form.pickupAvailable,
-                    onTap: () => setState(() =>
-                        _form.pickupAvailable =
-                            !_form.pickupAvailable),
+                    onTap: () => setState(
+                        () => _form.pickupAvailable = !_form.pickupAvailable),
                   ),
                 ),
               ]),
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -862,8 +840,7 @@ class _ProductFormPageState extends State<_ProductFormPage> {
                   Switch(
                     value: _form.isCertified,
                     activeColor: AppColors.success,
-                    onChanged: (v) =>
-                        setState(() => _form.isCertified = v),
+                    onChanged: (v) => setState(() => _form.isCertified = v),
                   ),
                 ]),
               ),
@@ -920,9 +897,7 @@ class _ProductFormPageState extends State<_ProductFormPage> {
       if (!mounted) return;
       Navigator.pop(context);
       WoilaToast.success(
-        widget.existing != null
-            ? 'Produit mis à jour'
-            : 'Produit ajouté',
+        widget.existing != null ? 'Produit mis à jour' : 'Produit ajouté',
         _form.nameCtrl.text.trim(),
       );
     } catch (e) {
@@ -982,8 +957,7 @@ class _ImageDropZone extends StatelessWidget {
                   if (imageBytes != null)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(14),
-                      child: Image.memory(imageBytes!,
-                          fit: BoxFit.cover),
+                      child: Image.memory(imageBytes!, fit: BoxFit.cover),
                     )
                   else if (existingPhotoUrl != null &&
                       existingPhotoUrl!.isNotEmpty)
@@ -991,8 +965,7 @@ class _ImageDropZone extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                       child: Image.network(existingPhotoUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _emptyState()),
+                          errorBuilder: (_, __, ___) => _emptyState()),
                     )
                   else
                     _emptyState(),
@@ -1020,26 +993,22 @@ class _ImageDropZone extends StatelessWidget {
                                 ),
                               ),
                               child: const Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.end,
+                                mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   Padding(
-                                    padding: EdgeInsets.only(
-                                        bottom: 12),
+                                    padding: EdgeInsets.only(bottom: 12),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(Icons.camera_alt_outlined,
-                                            color: Colors.white,
-                                            size: 16),
+                                            color: Colors.white, size: 16),
                                         SizedBox(width: 6),
                                         Text('Changer la photo',
                                             style: TextStyle(
                                                 fontFamily: 'Poppins',
                                                 fontSize: 12,
                                                 color: Colors.white,
-                                                fontWeight:
-                                                    FontWeight.w600)),
+                                                fontWeight: FontWeight.w600)),
                                       ],
                                     ),
                                   ),
@@ -1183,8 +1152,7 @@ class _ModeChip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            vertical: 12, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.06)
@@ -1200,17 +1168,15 @@ class _ModeChip extends StatelessWidget {
           children: [
             Icon(icon,
                 size: 16,
-                color: isSelected
-                    ? AppColors.primary
-                    : AppColors.textSecondary),
+                color:
+                    isSelected ? AppColors.primary : AppColors.textSecondary),
             const SizedBox(width: 6),
             Text(label,
                 style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 12,
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     color: isSelected
                         ? AppColors.primary
                         : AppColors.textSecondary)),

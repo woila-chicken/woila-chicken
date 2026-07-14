@@ -1,10 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firestore_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/product_image.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/widgets/kpi_card.dart';
+import '../controllers/eleveur_controller.dart';
 import 'stock_screen.dart';
 import 'eleveur_orders_screen.dart';
 import 'farm_profile_screen.dart';
@@ -237,196 +240,108 @@ class _MobileEleveurLayout extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────
 //  Corps partagé dashboard éleveur
 // ─────────────────────────────────────────────────────────────────
-class _EleveurDashboardBody extends StatefulWidget {
+class _EleveurDashboardBody extends StatelessWidget {
   final bool isDesktop;
   const _EleveurDashboardBody({required this.isDesktop});
 
   @override
-  State<_EleveurDashboardBody> createState() =>
-      _EleveurDashboardBodyState();
-}
-
-class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
-  final _auth = Get.find<AuthService>();
-  final _firestore = Get.find<FirestoreService>();
-  String? _farmId;
-  String _farmName = '';
-  bool _isLoadingFarm = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadFarm();
-  }
-
-  Future<void> _loadFarm() async {
-    final farm = await _firestore.getFarmByOwner(_auth.uid);
-    if (farm != null) {
-      setState(() {
-        _farmId = farm['id'];
-        _farmName = farm['name'] ?? '';
-        _isLoadingFarm = false;
-      });
-    } else {
-      setState(() => _isLoadingFarm = false);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_isLoadingFarm) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(40),
-          child: CircularProgressIndicator(color: AppColors.accent),
-        ),
-      );
-    }
+    final ctrl = Get.find<EleveurController>();
 
-    if (_farmId == null) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.store_outlined,
-                size: 56, color: AppColors.textSecondary),
-            SizedBox(height: 12),
-            Text('Aucune ferme associée à ce compte',
-                style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    color: AppColors.textSecondary),
-                textAlign: TextAlign.center),
-          ]),
-        ),
-      );
-    }
+    return Obx(() {
+      if (ctrl.isLoadingFarm.value) {
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(40),
+            child: CircularProgressIndicator(
+                color: AppColors.accent),
+          ),
+        );
+      }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── En-tête bonjour ────────────────────────────────────
-        Text(_farmName,
-            style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 4),
-        Text('Voici un aperçu de votre activité',
-            style: Theme.of(context).textTheme.bodyMedium),
-        const SizedBox(height: 20),
+      if (ctrl.farmId.value == null) {
+        return const Center(
+          child: Text('Aucune ferme associée à ce compte',
+              style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: AppColors.textSecondary)),
+        );
+      }
 
-        // ── KPIs réels ───────────────────────────────────────────
-        StreamBuilder<List<Map<String, dynamic>>>(
-          stream: _firestore.getProducts(farmId: _farmId).map(
-              (products) => products
-                  .map((p) => {'id': p.id, 'name': p.name})
-                  .toList()),
-          builder: (context, productSnap) {
-            return StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _firestore.getFarmOrders(_farmId!),
-              builder: (context, orderSnap) {
-                final products = productSnap.data ?? [];
-                final orders = orderSnap.data ?? [];
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Bonjour
+          Text(ctrl.farmName.value,
+              style:
+                  Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(height: 4),
+          Text('Voici un aperçu de votre activité',
+              style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 20),
 
-                final activeOrders = orders
-                    .where((o) => [
-                          'pending',
-                          'confirmed',
-                          'inRoute'
-                        ].contains(o['status']))
-                    .length;
+          // KPIs
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: isDesktop ? 4 : 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: isDesktop ? 1.3 : 1.0,
+            children: [
+              WoilaKpiCard(
+                value: '${ctrl.productCount.value}',
+                label: 'Produits en stock',
+                icon: Icons.inventory_2_rounded,
+                color: const Color(0xFF854F0B),
+                trend: KpiTrend.neutral,
+                trendLabel: 'actifs',
+                onTap: () =>
+                    Get.to(() => const StockScreen()),
+              ),
+              WoilaKpiCard(
+                value: '${ctrl.activeOrderCount.value}',
+                label: 'Commandes en cours',
+                icon: Icons.pending_actions_rounded,
+                color: AppColors.warning,
+                trend: ctrl.activeOrderCount.value > 0
+                    ? KpiTrend.up
+                    : KpiTrend.neutral,
+                trendLabel: ctrl.activeOrderCount.value > 0
+                    ? 'à traiter'
+                    : 'aucune',
+                onTap: () =>
+                    Get.to(() => const EleveurOrdersScreen()),
+              ),
+              WoilaKpiCard(
+                value: ctrl.monthRevenue.value
+                    .toStringAsFixed(0),
+                unit: 'FCFA',
+                label: 'Revenus ce mois',
+                icon: Icons.account_balance_wallet_rounded,
+                color: AppColors.success,
+                trend: KpiTrend.neutral,
+                trendLabel: 'ce mois',
+              ),
+              WoilaKpiCard(
+                value: ctrl.rating.value > 0
+                    ? ctrl.rating.value.toStringAsFixed(1)
+                    : '—',
+                label: 'Note clients',
+                icon: Icons.star_rounded,
+                color: AppColors.accent,
+                trend: KpiTrend.neutral,
+                trendLabel: ctrl.rating.value > 0
+                    ? 'sur 5'
+                    : 'pas encore',
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
 
-                final now = DateTime.now();
-                double monthRevenue = 0;
-                for (final o in orders) {
-                  if (o['status'] != 'completed') continue;
-                  try {
-                    final dt = (o['createdAt'] as dynamic).toDate();
-                    if (dt.month == now.month &&
-                        dt.year == now.year) {
-                      monthRevenue +=
-                          (o['total'] as num?)?.toDouble() ?? 0;
-                    }
-                  } catch (_) {}
-                }
-
-                return FutureBuilder<Map<String, dynamic>?>(
-                  future: _firestore.getFarmByOwner(_auth.uid),
-                  builder: (context, farmSnap) {
-                    final rating =
-                        (farmSnap.data?['rating'] as num?)
-                                ?.toDouble() ??
-                            0;
-
-                    return GridView.count(
-                      shrinkWrap: true,
-                      physics:
-                          const NeverScrollableScrollPhysics(),
-                      crossAxisCount: widget.isDesktop ? 4 : 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio:
-                          widget.isDesktop ? 1.3 : 1.0,
-                      children: [
-                        WoilaKpiCard(
-                          value: '${products.length}',
-                          label: 'Produits en stock',
-                          icon: Icons.inventory_2_rounded,
-                          color: const Color(0xFF854F0B),
-                          trend: KpiTrend.neutral,
-                          trendLabel: 'actifs',
-                          onTap: () =>
-                              Get.to(() => const StockScreen()),
-                        ),
-                        WoilaKpiCard(
-                          value: '$activeOrders',
-                          label: 'Commandes en cours',
-                          icon: Icons.pending_actions_rounded,
-                          color: AppColors.warning,
-                          trend: activeOrders > 0
-                              ? KpiTrend.up
-                              : KpiTrend.neutral,
-                          trendLabel:
-                              activeOrders > 0 ? 'à traiter' : 'aucune',
-                          onTap: () => Get.to(
-                              () => const EleveurOrdersScreen()),
-                        ),
-                        WoilaKpiCard(
-                          value: monthRevenue.toStringAsFixed(0),
-                          unit: 'FCFA',
-                          label: 'Revenus ce mois',
-                          icon: Icons.account_balance_wallet_rounded,
-                          color: AppColors.success,
-                          trend: KpiTrend.neutral,
-                          trendLabel: 'ce mois',
-                        ),
-                        WoilaKpiCard(
-                          value: rating.toStringAsFixed(1),
-                          label: 'Note clients',
-                          icon: Icons.star_rounded,
-                          color: AppColors.accent,
-                          trend: KpiTrend.neutral,
-                          trendLabel: rating > 0 ? 'sur 5' : 'pas encore',
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-            );
-          },
-        ),
-        const SizedBox(height: 24),
-
-        // ── Alerte commandes en attente ──────────────────────────
-        StreamBuilder<List<Map<String, dynamic>>>(
-          stream: _firestore.getFarmOrders(_farmId!),
-          builder: (context, snap) {
-            final orders = snap.data ?? [];
-            final pending = orders
-                .where((o) => o['status'] == 'pending')
-                .length;
-            if (pending == 0) return const SizedBox.shrink();
-
-            return Padding(
+          // Alerte commandes en attente
+          if (ctrl.pendingOrderCount.value > 0)
+            Padding(
               padding: const EdgeInsets.only(bottom: 20),
               child: Container(
                 padding: const EdgeInsets.all(14),
@@ -434,15 +349,18 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
                   color: AppColors.warning.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.3)),
+                      color:
+                          AppColors.warning.withValues(alpha: 0.3)),
                 ),
                 child: Row(children: [
-                  const Icon(Icons.notifications_active_outlined,
-                      color: AppColors.warning, size: 22),
+                  const Icon(
+                      Icons.notifications_active_outlined,
+                      color: AppColors.warning,
+                      size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      '$pending nouvelle${pending > 1 ? 's' : ''} commande${pending > 1 ? 's' : ''} à confirmer',
+                      '${ctrl.pendingOrderCount.value} nouvelle${ctrl.pendingOrderCount.value > 1 ? 's' : ''} commande${ctrl.pendingOrderCount.value > 1 ? 's' : ''} à confirmer',
                       style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 13,
@@ -460,130 +378,162 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
                     ),
                     child: const Text('Voir',
                         style: TextStyle(
-                            fontSize: 12, fontFamily: 'Poppins')),
+                            fontSize: 12,
+                            fontFamily: 'Poppins')),
                   ),
                 ]),
               ),
-            );
-          },
-        ),
+            ),
 
-        // ── Dernières commandes ──────────────────────────────────
-        Text('Dernières commandes',
-            style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 12),
-        StreamBuilder<List<Map<String, dynamic>>>(
-          stream: _firestore.getFarmOrders(_farmId!),
-          builder: (context, snap) {
-            final orders = (snap.data ?? []).take(4).toList();
-            if (orders.isEmpty) {
-              return Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.divider),
-                ),
-                child: const Center(
-                  child: Text('Aucune commande pour le moment',
-                      style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 13,
-                          color: AppColors.textSecondary)),
-                ),
-              );
-            }
-            return Column(
-              children: orders.map((order) {
-                final status = order['status'] ?? 'pending';
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.divider),
-                  ),
-                  child: Row(children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.07),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.set_meal_rounded,
-                          color: AppColors.primary, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                        children: [
-                          Text('#${order['ref'] ?? ''}',
-                              style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600)),
-                          Text(
-                              order['clientName'] as String? ?? '',
-                              style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary)),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _statusColor(status).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(_statusLabel(status),
-                          style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: _statusColor(status))),
-                    ),
-                  ]),
-                );
-              }).toList(),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Color _statusColor(String s) {
-    switch (s) {
-      case 'pending':   return AppColors.warning;
-      case 'confirmed': return AppColors.success;
-      case 'inRoute':   return Colors.blue;
-      case 'delivered': return AppColors.primary;
-      case 'completed': return AppColors.textSecondary;
-      case 'disputed':  return AppColors.error;
-      default:          return AppColors.textSecondary;
-    }
-  }
-
-  String _statusLabel(String s) {
-    switch (s) {
-      case 'pending':   return 'En attente';
-      case 'confirmed': return 'Confirmée';
-      case 'inRoute':   return 'En route';
-      case 'delivered': return 'Livrée';
-      case 'completed': return 'Terminée';
-      case 'disputed':  return 'Litige';
-      default:          return s;
-    }
+          // Dernières commandes
+          Text('Dernières commandes',
+              style:
+                  Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(height: 12),
+          _RecentOrders(farmId: ctrl.farmId.value!),
+        ],
+      );
+    });
   }
 }
 
+class _RecentOrders extends StatelessWidget {
+  final String farmId;
+  const _RecentOrders({required this.farmId});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('orders')
+          .where('farmId', isEqualTo: farmId)
+          .orderBy('createdAt', descending: true)
+          .limit(4)
+          .snapshots(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+                color: AppColors.accent),
+          );
+        }
+
+        final docs = snap.data?.docs ?? [];
+
+        if (docs.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.divider),
+            ),
+            child: const Center(
+              child: Text('Aucune commande pour le moment',
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      color: AppColors.textSecondary)),
+            ),
+          );
+        }
+
+        return Column(
+          children: docs.map((doc) {
+            final order = doc.data() as Map<String, dynamic>;
+            final status =
+                order['status'] as String? ?? 'pending';
+
+            Color statusColor;
+            String statusLabel;
+            switch (status) {
+              case 'pending':
+                statusColor = AppColors.warning;
+                statusLabel = 'En attente';
+                break;
+              case 'confirmed':
+                statusColor = AppColors.success;
+                statusLabel = 'Confirmée';
+                break;
+              case 'delivered':
+                statusColor = AppColors.primary;
+                statusLabel = 'Livrée';
+                break;
+              case 'completed':
+                statusColor = AppColors.textSecondary;
+                statusLabel = 'Terminée';
+                break;
+              case 'disputed':
+                statusColor = AppColors.error;
+                statusLabel = 'Litige';
+                break;
+              default:
+                statusColor = AppColors.textSecondary;
+                statusLabel = status;
+            }
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Row(children: [
+                ProductImage(
+                  imageUrl:
+                      order['productPhotoUrl'] as String?,
+                  width: 40,
+                  height: 40,
+                  iconSize: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '#${order['ref'] ?? ''}',
+                        style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary),
+                      ),
+                      Text(
+                        order['clientName'] as String? ?? '',
+                        style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(statusLabel,
+                      style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor)),
+                ),
+              ]),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+}
 
 class _EleveurTopBar extends StatelessWidget {
   @override
