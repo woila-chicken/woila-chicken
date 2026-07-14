@@ -127,93 +127,86 @@ class _EleveurOrdersScreenState extends State<EleveurOrdersScreen> {
   }
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: AppColors.background,
-    appBar: AppBar(
-      title: const Text('Commandes reçues'),
-      backgroundColor: AppColors.accent,
-      foregroundColor: const Color(0xFF412402),
-    ),
-    body: Obx(() {
-      if (_ctrl.isLoadingFarm.value) {
-        return const Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
-        );
-      }
-      if (_ctrl.farmId.value == null) {
-        return const Center(
-          child: Text('Aucune ferme associée',
-              style: TextStyle(
-                  fontFamily: 'Poppins',
-                  color: AppColors.textSecondary)),
-        );
-      }
-      return ResponsiveLayout(
-        desktop: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: _buildList(),
-          ),
-        ),
-        mobile: _buildList(),
-      );
-    }),
-  );
-}
-
-Widget _buildList() {
-  return StreamBuilder<List<Map<String, dynamic>>>(
-    stream: _firestore.getFarmOrders(_ctrl.farmId.value!),
-    builder: (context, snap) {
-      if (snap.connectionState == ConnectionState.waiting) {
-        return const Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
-        );
-      }
-      final orders = snap.data ?? [];
-      if (orders.isEmpty) {
-        return Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.receipt_long_outlined,
-                size: 64,
-                color: AppColors.textSecondary.withOpacity(0.3)),
-            const SizedBox(height: 12),
-            const Text('Aucune commande reçue',
-                style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 15,
-                    color: AppColors.textSecondary)),
-          ]),
-        );
-      }
-      return ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: orders.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (_, i) {
-          final order = orders[i];
-          final status = order['status'] as String? ?? 'pending';
-          return _OrderCard(
-            order: order,
-            statusLabel: _statusLabel(status),
-            statusColor: _statusColor(status),
-            onConfirm: status == 'pending'
-                ? () => _confirmOrder(order)
-                : null,
-            onDeliver: status == 'confirmed'
-                ? () => _markDelivered(order)
-                : null,
-            onRefuse: status == 'pending'
-                ? () => _refuseOrder(order)
-                : null,
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Commandes reçues'),
+        backgroundColor: AppColors.accent,
+        foregroundColor: const Color(0xFF412402),
+      ),
+      body: Obx(() {
+        if (_ctrl.isLoadingFarm.value) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.accent),
           );
-        },
-      );
-    },
-  );
-}
+        }
+        if (_ctrl.farmId.value == null) {
+          return const Center(
+            child: Text('Aucune ferme associée',
+                style: TextStyle(
+                    fontFamily: 'Poppins', color: AppColors.textSecondary)),
+          );
+        }
+        return ResponsiveLayout(
+          desktop: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: _buildList(),
+            ),
+          ),
+          mobile: _buildList(),
+        );
+      }),
+    );
+  }
 
+  Widget _buildList() {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _firestore.getFarmOrders(_ctrl.farmId.value!),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.accent),
+          );
+        }
+        final orders = snap.data ?? [];
+        if (orders.isEmpty) {
+          return Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.receipt_long_outlined,
+                  size: 64, color: AppColors.textSecondary.withOpacity(0.3)),
+              const SizedBox(height: 12),
+              const Text('Aucune commande reçue',
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 15,
+                      color: AppColors.textSecondary)),
+            ]),
+          );
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: orders.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (_, i) {
+            final order = orders[i];
+            final status = order['status'] as String? ?? 'pending';
+            return _OrderCard(
+              order: order,
+              statusLabel: _statusLabel(status),
+              statusColor: _statusColor(status),
+              onConfirm:
+                  status == 'pending' ? () => _confirmOrder(order) : null,
+              onDeliver:
+                  status == 'confirmed' ? () => _markDelivered(order) : null,
+              onRefuse: status == 'pending' ? () => _refuseOrder(order) : null,
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 class _OrderCard extends StatelessWidget {

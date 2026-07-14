@@ -9,7 +9,6 @@ import 'core/services/notification_service.dart';
 import 'core/services/storage_service.dart';
 import 'features/auth/screens/maintenance_screen.dart';
 import 'features/client/controllers/cart_controller.dart';
-import 'features/eleveur/controllers/eleveur_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +18,6 @@ void main() async {
   Get.put(NotificationService(), permanent: true);
   Get.put(StorageService(), permanent: true);
   Get.put(CartController(), permanent: true);
-  Get.put(EleveurController(), permanent: true);
   runApp(const WoilaChickenApp());
 }
 

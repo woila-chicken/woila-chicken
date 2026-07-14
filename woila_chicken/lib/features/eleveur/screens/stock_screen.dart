@@ -7,6 +7,7 @@ import '../../../core/services/storage_service.dart';
 import '../../../core/widgets/woila_toast.dart';
 import '../controllers/stock_controller.dart';
 
+
 // ─────────────────────────────────────────────────────────────────
 //  ÉCRAN PRINCIPAL STOCK
 // ─────────────────────────────────────────────────────────────────
