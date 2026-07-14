@@ -1,13 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firestore_service.dart';
-import 'eleveur_controller.dart';
 
 class StockController extends GetxController {
   final _firestore = Get.find<FirestoreService>();
   final _auth = Get.find<AuthService>();
+
   final items = <Map<String, dynamic>>[].obs;
   final isLoading = true.obs;
   final farmId = Rx<String?>(null);
@@ -20,63 +21,59 @@ class StockController extends GetxController {
   }
 
   Future<void> _loadFarm() async {
-  // Attendre que EleveurController ait chargé la ferme
-  final eleveurCtrl = Get.find<EleveurController>();
-
-  // Si déjà chargé, utiliser directement
-  if (!eleveurCtrl.isLoadingFarm.value &&
-      eleveurCtrl.farmId.value != null) {
-    farmId.value = eleveurCtrl.farmId.value;
-    farmName = eleveurCtrl.farmName.value;
-    _listenStock();
-    isLoading.value = false;
-    return;
+    try {
+      final farm =
+          await _firestore.getFarmByOwner(_auth.uid);
+      if (farm == null) {
+        isLoading.value = false;
+        return;
+      }
+      farmId.value = farm['id'] as String?;
+      farmName = farm['name'] as String? ?? '';
+      _listenStock();
+    } catch (e) {
+      debugPrint('Erreur StockController: $e');
+      isLoading.value = false;
+    }
   }
 
-  // Sinon attendre
-  ever(eleveurCtrl.farmId, (id) {
-    if (id != null && farmId.value == null) {
-      farmId.value = id;
-      farmName = eleveurCtrl.farmName.value;
-      _listenStock();
+  void _listenStock() {
+    if (farmId.value == null) return;
+    FirebaseFirestore.instance
+        .collection('products')
+        .where('farmId', isEqualTo: farmId.value)
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .listen((snap) {
+      items.value = snap.docs.map((doc) {
+        final d = doc.data();
+        return {
+          'id': doc.id,
+          'name': d['name'] ?? '',
+          'weightKg':
+              (d['weightKg'] as num?)?.toDouble() ?? 0,
+          'priceFcfa':
+              (d['priceFcfa'] as num?)?.toDouble() ?? 0,
+          'quantity':
+              (d['quantity'] as num?)?.toInt() ?? 0,
+          'isCertified':
+              d['hasSanitaryCert'] as bool? ?? false,
+          'photoUrl': d['photoUrl'] as String? ?? '',
+          'deliveryAvailable':
+              d['deliveryAvailable'] as bool? ?? true,
+          'pickupAvailable':
+              d['pickupAvailable'] as bool? ?? true,
+          'description':
+              d['description'] as String? ?? '',
+        };
+      }).toList();
       isLoading.value = false;
-    }
-  });
-
-  // Cas où isLoadingFarm devient false mais farmId est null
-  ever(eleveurCtrl.isLoadingFarm, (loading) {
-    if (!loading && eleveurCtrl.farmId.value == null) {
+    }, onError: (e) {
+      debugPrint('Erreur stream stock: $e');
       isLoading.value = false;
-    }
-  });
-}
+    });
+  }
 
-void _listenStock() {
-  if (farmId.value == null) return;
-  FirebaseFirestore.instance
-      .collection('products')
-      .where('farmId', isEqualTo: farmId.value)
-      .where('isActive', isEqualTo: true)
-      .snapshots()
-      .listen((snap) {
-    items.value = snap.docs.map((doc) {
-      final d = doc.data();
-      return {
-        'id': doc.id,
-        'name': d['name'] ?? '',
-        'weightKg': (d['weightKg'] as num?)?.toDouble() ?? 0,
-        'priceFcfa': (d['priceFcfa'] as num?)?.toDouble() ?? 0,
-        'quantity': (d['quantity'] as num?)?.toInt() ?? 0,
-        'isCertified': d['hasSanitaryCert'] as bool? ?? false,
-        'photoUrl': d['photoUrl'] as String? ?? '',
-        'deliveryAvailable':
-            d['deliveryAvailable'] as bool? ?? true,
-        'pickupAvailable': d['pickupAvailable'] as bool? ?? true,
-        'description': d['description'] as String? ?? '',
-      };
-    }).toList();
-  });
-}
   Future<void> addOrUpdate({
     String? id,
     required String name,
@@ -101,8 +98,10 @@ void _listenStock() {
       'pickupAvailable': pickupAvailable,
       'availability': 'immediate',
       'farmRating': 0,
+      'isActive': true,
       'description': description ?? '',
-      if (photoUrl != null && photoUrl.isNotEmpty) 'photoUrl': photoUrl,
+      if (photoUrl != null && photoUrl.isNotEmpty)
+        'photoUrl': photoUrl,
     };
     if (id != null) {
       await _firestore.updateProduct(id, payload);
