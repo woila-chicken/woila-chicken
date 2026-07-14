@@ -538,88 +538,65 @@ class _RecentOrders extends StatelessWidget {
 class _EleveurTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final auth = Get.find<AuthService>();
-    final firestore = Get.find<FirestoreService>();
-
+    final ctrl = Get.find<EleveurController>();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+          horizontal: 32, vertical: 16),
       color: Colors.white,
-      child: Row(
-        children: [
-          Text(
-                'Tableau de Bord',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-          const Spacer(),
-
-          // Cloche avec badge commandes en attente
-          FutureBuilder<Map<String, dynamic>?>(
-            future: firestore.getFarmByOwner(auth.uid),
-            builder: (context, farmSnap) {
-              final farmId = farmSnap.data?['id'] as String?;
-              if (farmId == null) {
-                return IconButton(
-                  icon: const Icon(Icons.notifications_outlined,
+      child: Row(children: [
+        Obx(() => Text(
+              ctrl.farmName.value.isNotEmpty
+                  ? 'Bonjour, ${ctrl.farmName.value} !'
+                  : 'Bonjour !',
+              style:
+                  Theme.of(context).textTheme.headlineMedium,
+            )),
+        const Spacer(),
+        Obx(() {
+          final pending = ctrl.pendingOrderCount.value;
+          return SizedBox(
+            width: 48,
+            height: 48,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(
+                      Icons.notifications_outlined,
                       color: AppColors.warning),
-                  onPressed: () {},
-                );
-              }
-              return StreamBuilder<List<Map<String, dynamic>>>(
-                stream: firestore.getFarmOrders(farmId),
-                builder: (context, orderSnap) {
-                  final pending = (orderSnap.data ?? [])
-                      .where((o) => o['status'] == 'pending')
-                      .length;
-
-                  return SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                              Icons.notifications_outlined,
-                              color: AppColors.warning),
-                          onPressed: () {
-                            Get.to(() => const EleveurOrdersScreen());
-                          },
+                  onPressed: () => Get.to(
+                      () => const EleveurOrdersScreen()),
+                ),
+                if (pending > 0)
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: const BoxDecoration(
+                          color: AppColors.error,
+                          shape: BoxShape.circle),
+                      child: Center(
+                        child: Text(
+                          pending > 9 ? '9+' : '$pending',
+                          style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white),
                         ),
-                        if (pending > 0)
-                          Positioned(
-                            right: 6,
-                            top: 6,
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: const BoxDecoration(
-                                  color: AppColors.error,
-                                  shape: BoxShape.circle),
-                              child: Center(
-                                child: Text(
-                                  pending > 9 ? '9+' : '$pending',
-                                  style: const TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                      ),
                     ),
-                  );
-                },
-              );
-            },
-          ),
-        ],
-      ),
+                  ),
+              ],
+            ),
+          );
+        }),
+      ]),
     );
   }
 }
-
 class _EleveurSidebarItem extends StatelessWidget {
   final IconData icon;
   final String label;
