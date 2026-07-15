@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/quantity_stepper.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/widgets/woila_toast.dart';
 import '../controllers/stock_controller.dart';
-
 
 // ─────────────────────────────────────────────────────────────────
 //  ÉCRAN PRINCIPAL STOCK
@@ -491,7 +491,7 @@ class _ProductFormPanelState extends State<_ProductFormPanel> {
               children: [
                 const _Label('Quantité'),
                 const SizedBox(height: 6),
-                _QuantityStepper(
+                QuantityStepper(
                   value: _form.quantity,
                   onChanged: (v) => setState(() => _form.quantity = v),
                 ),
@@ -755,7 +755,7 @@ class _ProductFormPageState extends State<_ProductFormPage> {
                     children: [
                       const _Label('Quantité'),
                       const SizedBox(height: 6),
-                      _QuantityStepper(
+                      QuantityStepper(
                         value: _form.quantity,
                         onChanged: (v) => setState(() => _form.quantity = v),
                       ),
@@ -1054,81 +1054,6 @@ class _ImageDropZone extends StatelessWidget {
                 fontSize: 11,
                 color: AppColors.textSecondary)),
       ],
-    );
-  }
-}
-
-// Stepper quantité — flèches haut/bas
-class _QuantityStepper extends StatelessWidget {
-  final int value;
-  final ValueChanged<int> onChanged;
-
-  const _QuantityStepper({
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Row(children: [
-        // Bouton moins
-        InkWell(
-          onTap: value > 0 ? () => onChanged(value - 1) : null,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(12),
-            bottomLeft: Radius.circular(12),
-          ),
-          child: SizedBox(
-            width: 42,
-            height: 48,
-            child: Icon(
-              Icons.remove_rounded,
-              size: 18,
-              color: value > 0
-                  ? AppColors.primary
-                  : AppColors.textSecondary.withValues(alpha: 0.3),
-            ),
-          ),
-        ),
-
-        // Valeur
-        Expanded(
-          child: Text(
-            '$value',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary),
-          ),
-        ),
-
-        // Bouton plus
-        InkWell(
-          onTap: () => onChanged(value + 1),
-          borderRadius: const BorderRadius.only(
-            topRight: Radius.circular(12),
-            bottomRight: Radius.circular(12),
-          ),
-          child: const SizedBox(
-            width: 42,
-            height: 48,
-            child: Icon(
-              Icons.add_rounded,
-              size: 18,
-              color: AppColors.primary,
-            ),
-          ),
-        ),
-      ]),
     );
   }
 }

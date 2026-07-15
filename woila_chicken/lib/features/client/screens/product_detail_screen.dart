@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/models/product.dart';
+import '../../../core/widgets/quantity_stepper.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import 'checkout_screen.dart';
 import '../controllers/cart_controller.dart';
@@ -355,37 +356,12 @@ class _OrderPanelState extends State<_OrderPanel> {
                     border: Border.all(color: AppColors.divider),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_rounded),
-                      iconSize: 18,
-                      color: quantity > 1
-                          ? AppColors.primary
-                          : AppColors.divider,
-                      onPressed: quantity > 1
-                          ? () => setState(() => quantity--)
-                          : null,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('$quantity',
-                          style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary)),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_rounded),
-                      iconSize: 18,
-                      color: quantity < stockQty
-                          ? AppColors.primary
-                          : AppColors.divider,
-                      onPressed: quantity < stockQty
-                          ? () => setState(() => quantity++)
-                          : null,
-                    ),
-                  ]),
+                  child: QuantityStepper(
+  value: quantity,
+  onChanged: (v) {
+    if (v <= stockQty) setState(() => quantity = v);
+  },
+),
                 ),
                 const SizedBox(width: 12),
                 Text(
