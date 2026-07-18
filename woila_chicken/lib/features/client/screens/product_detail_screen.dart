@@ -349,11 +349,15 @@ class _OrderPanelState extends State<_OrderPanel> {
                     border: Border.all(color: AppColors.divider),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: QuantityStepper(
-                    value: quantity,
-                    onChanged: (v) {
-                      if (v <= stockQty) setState(() => quantity = v);
-                    }, max: stockQty,
+                  child: SizedBox(
+                    width: 180,
+                    child: QuantityStepper(
+                      value: quantity,
+                      onChanged: (v) {
+                        if (v <= stockQty) setState(() => quantity = v);
+                      },
+                      max: stockQty,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
