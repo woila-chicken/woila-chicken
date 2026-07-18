@@ -379,8 +379,7 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Bonjour, $_farmName !',
-            style: Theme.of(context).textTheme.headlineMedium),
+        Text(_farmName, style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 4),
         Text('Voici un aperçu de votre activité',
             style: Theme.of(context).textTheme.bodyMedium),
@@ -516,48 +515,6 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
                       ),
                     ),
                   const SizedBox(height: 24),
-
-                  // Alerte
-                  if (pendingCount > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppColors.warning.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                              color: AppColors.warning.withValues(alpha: 0.3)),
-                        ),
-                        child: Row(children: [
-                          const Icon(Icons.notifications_active_outlined,
-                              color: AppColors.warning, size: 22),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              '$pendingCount commande${pendingCount > 1 ? 's' : ''} à confirmer',
-                              style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () =>
-                                Get.to(() => const EleveurOrdersScreen()),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.warning,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 8),
-                            ),
-                            child: const Text('Voir',
-                                style: TextStyle(
-                                    fontSize: 12, fontFamily: 'Poppins')),
-                          ),
-                        ]),
-                      ),
-                    ),
                 ]);
               },
             );
