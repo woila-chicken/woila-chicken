@@ -684,40 +684,37 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
-                          Row(children: [
-                            const Icon(Icons.person_outline,
-                                size: 11, color: AppColors.textSecondary),
-                            const SizedBox(width: 3),
-                            Expanded(
-                              child: Text(
-                                o['clientName'] as String? ?? '',
+                          Row(
+                            children: [
+                              const Icon(Icons.person_outline,
+                                  size: 11, color: AppColors.textSecondary),
+                              const SizedBox(width: 3),
+                              Expanded(
+                                child: Text(
+                                  o['clientName'] as String? ??
+                                      'Client inconnu',
+                                  style: const TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 11,
+                                      color: AppColors.textSecondary),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.shopping_basket_outlined,
+                                  size: 11, color: AppColors.textSecondary),
+                              const SizedBox(width: 3),
+                              Text(
+                                '×${(o['quantity'] as num?)?.toInt() ?? 1}',
                                 style: const TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 11,
+                                    fontWeight: FontWeight.w600,
                                     color: AppColors.textSecondary),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              (o['isDelivery'] as bool? ?? true)
-                                  ? Icons.local_shipping_outlined
-                                  : Icons.storefront_outlined,
-                              size: 11,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              (o['isDelivery'] as bool? ?? true)
-                                  ? 'Livraison'
-                                  : 'Retrait',
-                              style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary),
-                            ),
-                          ]),
+                            ],
+                          ),
                           const SizedBox(height: 3),
                           Text(
                             '${((o['total'] as num?)?.toDouble() ?? 0).toStringAsFixed(0)} FCFA',

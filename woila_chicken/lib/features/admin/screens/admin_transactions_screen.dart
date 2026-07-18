@@ -52,28 +52,42 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
   final _firestore = Get.find<FirestoreService>();
 
   Color _statusColor(String status) {
-  switch (status) {
-    case 'pending':   return AppColors.warning;
-    case 'confirmed': return AppColors.primary;
-    case 'inRoute':   return Colors.blue;
-    case 'delivered': return AppColors.success;
-    case 'completed': return AppColors.textSecondary;
-    case 'disputed':  return AppColors.error;
-    default:          return AppColors.textSecondary;
+    switch (status) {
+      case 'pending':
+        return AppColors.warning;
+      case 'confirmed':
+        return AppColors.primary;
+      case 'inRoute':
+        return Colors.blue;
+      case 'delivered':
+        return AppColors.success;
+      case 'completed':
+        return AppColors.textSecondary;
+      case 'disputed':
+        return AppColors.error;
+      default:
+        return AppColors.textSecondary;
+    }
   }
-}
 
-String _statusLabel(String status) {
-  switch (status) {
-    case 'pending':   return 'En attente';
-    case 'confirmed': return 'Confirmée';
-    case 'inRoute':   return 'En route';
-    case 'delivered': return 'Livrée';
-    case 'completed': return 'Terminée';
-    case 'disputed':  return 'Litige';
-    default:          return status;
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'pending':
+        return 'En attente';
+      case 'confirmed':
+        return 'Confirmée';
+      case 'inRoute':
+        return 'En route';
+      case 'delivered':
+        return 'Livrée';
+      case 'completed':
+        return 'Terminée';
+      case 'disputed':
+        return 'Litige';
+      default:
+        return status;
+    }
   }
-}
 
   bool get _hasFilters =>
       _selectedFarm != 'Toutes' ||
@@ -401,11 +415,11 @@ String _statusLabel(String status) {
           ),
           child: Row(children: [
             ProductImage(
-  imageUrl: order['productPhotoUrl'] as String?,
-  width: 42,
-  height: 42,
-  iconSize: 20,
-),
+              imageUrl: order['productPhotoUrl'] as String?,
+              width: 42,
+              height: 42,
+              iconSize: 20,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -449,43 +463,70 @@ String _statusLabel(String status) {
                                 fontFamily: 'Poppins', fontSize: 9),
                           ),
                           const SizedBox(width: 6),
-  Container(
-    padding: const EdgeInsets.symmetric(
-        horizontal: 7, vertical: 2),
-    decoration: BoxDecoration(
-      color: _statusColor(order['status'] as String? ?? '')
-          .withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Text(
-      _statusLabel(order['status'] as String? ?? ''),
-      style: TextStyle(
-          fontFamily: 'Poppins',
-          fontSize: 9,
-          fontWeight: FontWeight.w600,
-          color: _statusColor(
-              order['status'] as String? ?? '')),
-    ),
-  ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color:
+                                  _statusColor(order['status'] as String? ?? '')
+                                      .withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              _statusLabel(order['status'] as String? ?? ''),
+                              style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                  color: _statusColor(
+                                      order['status'] as String? ?? '')),
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ]),
                   const SizedBox(height: 2),
-                  Text(
-                    '${order['clientName'] ?? ''} · ${order['farmName'] ?? ''}',
-                    style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        color: AppColors.textSecondary),
-                  ),
-                  Text(
-                    '${order['productName'] ?? ''} · ${_formatDate(order['createdAt'])}',
-                    style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        color: AppColors.textSecondary),
-                  ),
+                  Row(children: [
+                    const Icon(Icons.person_outline,
+                        size: 12, color: AppColors.textSecondary),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        '${order['clientName'] ?? 'Client inconnu'} · ${order['farmName'] ?? ''}',
+                        style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: AppColors.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ]),
+                  Row(children: [
+                    const Icon(Icons.shopping_basket_outlined,
+                        size: 12, color: AppColors.textSecondary),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        '${order['productName'] ?? ''} · ×${(order['quantity'] as num?)?.toInt() ?? 1}',
+                        style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: AppColors.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _formatDate(order['createdAt']),
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 10,
+                          color: AppColors.textSecondary),
+                    ),
+                  ]),
                 ],
               ),
             ),

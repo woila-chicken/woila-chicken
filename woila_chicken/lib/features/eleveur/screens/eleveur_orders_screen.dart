@@ -173,7 +173,8 @@ class _EleveurOrdersScreenState extends State<EleveurOrdersScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.receipt_long_outlined,
-                    size: 64, color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                    size: 64,
+                    color: AppColors.textSecondary.withValues(alpha: 0.3)),
                 const SizedBox(height: 12),
                 const Text('Aucune commande reçue',
                     style: TextStyle(
@@ -293,13 +294,36 @@ class _OrderCard extends StatelessWidget {
                         color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    order['clientName'] as String? ?? '',
-                    style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 12,
-                        color: AppColors.textSecondary),
-                  ),
+                  Row(children: [
+                    Expanded(
+                      child: Text(
+                        order['clientName'] as String? ?? 'Client inconnu',
+                        style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            color: AppColors.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '×${(order['quantity'] as num?)?.toInt() ?? 1}',
+                        style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary),
+                      ),
+                    ),
+                  ]),
                   const SizedBox(height: 3),
                   Row(children: [
                     Icon(
