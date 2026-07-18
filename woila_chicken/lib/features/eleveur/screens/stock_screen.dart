@@ -493,7 +493,7 @@ class _ProductFormPanelState extends State<_ProductFormPanel> {
                 const SizedBox(height: 6),
                 QuantityStepper(
                   value: _form.quantity,
-                  onChanged: (v) => setState(() => _form.quantity = v),
+                  onChanged: (v) => setState(() => _form.quantity = v), max: 1000,
                 ),
               ],
             ),
@@ -757,7 +757,7 @@ class _ProductFormPageState extends State<_ProductFormPage> {
                       const SizedBox(height: 6),
                       QuantityStepper(
                         value: _form.quantity,
-                        onChanged: (v) => setState(() => _form.quantity = v),
+                        onChanged: (v) => setState(() => _form.quantity = v), max: 1000
                       ),
                     ],
                   ),

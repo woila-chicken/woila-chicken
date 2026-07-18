@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -253,7 +255,7 @@ class _MobileEleveurLayout extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────
 class _EleveurDashboardBody extends StatefulWidget {
   final bool isDesktop;
-  const _EleveurDashboardBody({required this.isDesktop});
+  const _EleveurDashboardBody({super.key, required this.isDesktop});
 
   @override
   State<_EleveurDashboardBody> createState() => _EleveurDashboardBodyState();
@@ -271,6 +273,8 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
   int _pendingCount = 0;
   double _revenue = 0;
   double _rating = 0;
+  StreamSubscription? _productsSub;
+  StreamSubscription? _ordersSub;
 
   @override
   void initState() {
@@ -299,7 +303,8 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
   }
 
   void _listenProducts() {
-    FirebaseFirestore.instance
+    _productsSub?.cancel(); // annuler avant de rouvrir
+    _productsSub = FirebaseFirestore.instance
         .collection('products')
         .where('farmId', isEqualTo: _farmId)
         .where('isActive', isEqualTo: true)
@@ -311,7 +316,8 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
   }
 
   void _listenOrders() {
-    FirebaseFirestore.instance
+    _ordersSub?.cancel(); // annuler avant de rouvrir
+    _ordersSub = FirebaseFirestore.instance
         .collection('orders')
         .where('farmId', isEqualTo: _farmId)
         .snapshots()
@@ -322,7 +328,6 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
       double rev = 0;
       int active = 0;
       int pending = 0;
-
       for (final d in docs) {
         final o = d.data() as Map<String, dynamic>;
         final status = o['status'] as String? ?? '';
@@ -337,13 +342,19 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
           } catch (_) {}
         }
       }
-
       setState(() {
         _activeOrders = active;
         _pendingCount = pending;
         _revenue = rev;
       });
     });
+  }
+
+  @override
+  void dispose() {
+    _productsSub?.cancel();
+    _ordersSub?.cancel();
+    super.dispose();
   }
 
   @override
@@ -415,7 +426,6 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
                     .length;
 
                 return Column(children: [
-                  // Remplace tout le bloc StreamBuilder<QuerySnapshot> des KPIs par :
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -464,17 +474,17 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
                   ),
                   const SizedBox(height: 24),
 
-// Alerte commandes
+                  // Alerte commandes
                   if (_pendingCount > 0)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20),
                       child: Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withOpacity(0.08),
+                          color: AppColors.warning.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                              color: AppColors.warning.withOpacity(0.3)),
+                              color: AppColors.warning.withValues(alpha: 0.3)),
                         ),
                         child: Row(children: [
                           const Icon(Icons.notifications_active_outlined,
@@ -621,47 +631,104 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.divider),
+                    border: Border.all(
+                      color: status == 'pending'
+                          ? AppColors.warning.withValues(alpha: 0.4)
+                          : AppColors.divider,
+                    ),
                   ),
                   child: Row(children: [
                     ProductImage(
                       imageUrl: o['productPhotoUrl'] as String?,
-                      width: 40,
-                      height: 40,
-                      iconSize: 20,
+                      width: 44,
+                      height: 44,
+                      iconSize: 22,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('#${o['ref'] ?? ''}',
-                              style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary)),
-                          Text(o['clientName'] as String? ?? '',
+                          Row(children: [
+                            Text('#${o['ref'] ?? ''}',
+                                style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary)),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: sc.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(sl,
+                                  style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                      color: sc)),
+                            ),
+                          ]),
+                          const SizedBox(height: 3),
+                          Text(
+                            o['productName'] as String? ?? '',
+                            style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textPrimary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Row(children: [
+                            const Icon(Icons.person_outline,
+                                size: 11, color: AppColors.textSecondary),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                o['clientName'] as String? ?? '',
+                                style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              (o['isDelivery'] as bool? ?? true)
+                                  ? Icons.local_shipping_outlined
+                                  : Icons.storefront_outlined,
+                              size: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              (o['isDelivery'] as bool? ?? true)
+                                  ? 'Livraison'
+                                  : 'Retrait',
                               style: const TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 11,
-                                  color: AppColors.textSecondary)),
+                                  color: AppColors.textSecondary),
+                            ),
+                          ]),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${((o['total'] as num?)?.toDouble() ?? 0).toStringAsFixed(0)} FCFA',
+                            style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary),
+                          ),
                         ],
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: sc.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(sl,
-                          style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: sc)),
                     ),
                   ]),
                 );

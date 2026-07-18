@@ -18,7 +18,7 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _wantsDelivery = true;
- 
+
   @override
   void initState() {
     super.initState();
@@ -178,7 +178,7 @@ class _ProductImage extends StatelessWidget {
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => const Center(
                         child: Icon(Icons.set_meal_rounded,
-      color: AppColors.primary, size: 80),
+                            color: AppColors.primary, size: 80),
                       ),
                     ),
                   ),
@@ -229,11 +229,10 @@ class _OrderPanelState extends State<_OrderPanel> {
   int quantity = 1;
   bool wantsDelivery = true;
 
-  String formatPrice(double p) =>
-      '${p.toStringAsFixed(0).replaceAllMapped(
-            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-            (m) => '${m[1]} ',
-          )} FCFA';
+  String formatPrice(double p) => '${p.toStringAsFixed(0).replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]} ',
+      )} FCFA';
 
   @override
   Widget build(BuildContext context) {
@@ -250,15 +249,10 @@ class _OrderPanelState extends State<_OrderPanel> {
           stockQty = (d['quantity'] as num?)?.toInt() ?? 0;
         }
 
-        final double totalPrice =
-            widget.product.pricefcfa * quantity +
-                (wantsDelivery &&
-                        widget.product.deliveryAvailable
-                    ? 500
-                    : 0);
+        final double totalPrice = widget.product.pricefcfa * quantity +
+            (wantsDelivery && widget.product.deliveryAvailable ? 500 : 0);
 
-        final bool canOrder =
-            stockQty > 0 && quantity <= stockQty;
+        final bool canOrder = stockQty > 0 && quantity <= stockQty;
 
         // Corriger quantity si dépasse le stock
         if (quantity > stockQty && stockQty > 0) {
@@ -292,8 +286,7 @@ class _OrderPanelState extends State<_OrderPanel> {
 
             // Stock indicator
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: stockQty == 0
                     ? AppColors.error.withValues(alpha: 0.08)
@@ -357,11 +350,11 @@ class _OrderPanelState extends State<_OrderPanel> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: QuantityStepper(
-  value: quantity,
-  onChanged: (v) {
-    if (v <= stockQty) setState(() => quantity = v);
-  },
-),
+                    value: quantity,
+                    onChanged: (v) {
+                      if (v <= stockQty) setState(() => quantity = v);
+                    }, max: stockQty,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -425,8 +418,7 @@ class _OrderPanelState extends State<_OrderPanel> {
                         );
                       }
                     : null,
-                icon: const Icon(
-                    Icons.add_shopping_cart_outlined, size: 18),
+                icon: const Icon(Icons.add_shopping_cart_outlined, size: 18),
                 label: const Text('Ajouter au panier',
                     style: TextStyle(fontFamily: 'Poppins')),
               ),
@@ -490,36 +482,29 @@ class _ModeBtn extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            vertical: 12, horizontal: 10),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.06)
               : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color:
-                isSelected ? AppColors.primary : AppColors.divider,
+            color: isSelected ? AppColors.primary : AppColors.divider,
             width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Column(children: [
           Icon(icon,
               size: 18,
-              color: isSelected
-                  ? AppColors.primary
-                  : AppColors.textSecondary),
+              color: isSelected ? AppColors.primary : AppColors.textSecondary),
           const SizedBox(height: 4),
           Text(label,
               style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 12,
-                  fontWeight: isSelected
-                      ? FontWeight.w600
-                      : FontWeight.normal,
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textPrimary)),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color:
+                      isSelected ? AppColors.primary : AppColors.textPrimary)),
           Text(sublabel,
               style: const TextStyle(
                   fontFamily: 'Poppins',
@@ -554,9 +539,10 @@ class _FarmCard extends StatelessWidget {
             height: 48,
             decoration: const BoxDecoration(
                 color: AppColors.accent, shape: BoxShape.circle),
-            child:
-                const Center(child: Icon(Icons.agriculture_rounded,
-    size: 22, color: Color(0xFF412402)),),
+            child: const Center(
+              child: Icon(Icons.agriculture_rounded,
+                  size: 22, color: Color(0xFF412402)),
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -675,8 +661,9 @@ class _LogisticOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color:
-              isSelected ? AppColors.primary.withValues(alpha: 0.06) : Colors.white,
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.06)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.divider,

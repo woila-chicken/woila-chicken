@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
@@ -13,6 +15,7 @@ class StockController extends GetxController {
   final isLoading = true.obs;
   final farmId = Rx<String?>(null);
   String farmName = '';
+  StreamSubscription? _stockSub;
 
   @override
   void onInit() {
@@ -22,8 +25,7 @@ class StockController extends GetxController {
 
   Future<void> _loadFarm() async {
     try {
-      final farm =
-          await _firestore.getFarmByOwner(_auth.uid);
+      final farm = await _firestore.getFarmByOwner(_auth.uid);
       if (farm == null) {
         isLoading.value = false;
         return;
@@ -38,8 +40,8 @@ class StockController extends GetxController {
   }
 
   void _listenStock() {
-    if (farmId.value == null) return;
-    FirebaseFirestore.instance
+    _stockSub?.cancel();
+    _stockSub = FirebaseFirestore.instance
         .collection('products')
         .where('farmId', isEqualTo: farmId.value)
         .where('isActive', isEqualTo: true)
@@ -50,21 +52,14 @@ class StockController extends GetxController {
         return {
           'id': doc.id,
           'name': d['name'] ?? '',
-          'weightKg':
-              (d['weightKg'] as num?)?.toDouble() ?? 0,
-          'priceFcfa':
-              (d['priceFcfa'] as num?)?.toDouble() ?? 0,
-          'quantity':
-              (d['quantity'] as num?)?.toInt() ?? 0,
-          'isCertified':
-              d['hasSanitaryCert'] as bool? ?? false,
+          'weightKg': (d['weightKg'] as num?)?.toDouble() ?? 0,
+          'priceFcfa': (d['priceFcfa'] as num?)?.toDouble() ?? 0,
+          'quantity': (d['quantity'] as num?)?.toInt() ?? 0,
+          'isCertified': d['hasSanitaryCert'] as bool? ?? false,
           'photoUrl': d['photoUrl'] as String? ?? '',
-          'deliveryAvailable':
-              d['deliveryAvailable'] as bool? ?? true,
-          'pickupAvailable':
-              d['pickupAvailable'] as bool? ?? true,
-          'description':
-              d['description'] as String? ?? '',
+          'deliveryAvailable': d['deliveryAvailable'] as bool? ?? true,
+          'pickupAvailable': d['pickupAvailable'] as bool? ?? true,
+          'description': d['description'] as String? ?? '',
         };
       }).toList();
       isLoading.value = false;
@@ -72,6 +67,12 @@ class StockController extends GetxController {
       debugPrint('Erreur stream stock: $e');
       isLoading.value = false;
     });
+  }
+
+  @override
+  void onClose() {
+    _stockSub?.cancel();
+    super.onClose();
   }
 
   Future<void> addOrUpdate({
@@ -100,8 +101,7 @@ class StockController extends GetxController {
       'farmRating': 0,
       'isActive': true,
       'description': description ?? '',
-      if (photoUrl != null && photoUrl.isNotEmpty)
-        'photoUrl': photoUrl,
+      if (photoUrl != null && photoUrl.isNotEmpty) 'photoUrl': photoUrl,
     };
     if (id != null) {
       await _firestore.updateProduct(id, payload);

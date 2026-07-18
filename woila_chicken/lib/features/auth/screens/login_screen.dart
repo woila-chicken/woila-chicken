@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/models/user_role.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firestore_service.dart';
 import '../../../core/theme/app_theme.dart';
@@ -335,12 +336,18 @@ class _LoginForm extends StatelessWidget {
                   return;
                 }
 
-                Get.toNamed(
-                  AppRoutes.roleSelection,
-                  arguments: {
-                    'isAdmin': auth.isAdmin.value,
-                  },
-                );
+                switch (auth.userRole.value) {
+    case UserRole.admin:
+      Get.offAllNamed(AppRoutes.adminHome);
+      break;
+    case UserRole.eleveur:
+      Get.offAllNamed(AppRoutes.eleveurHome);
+      break;
+    case UserRole.client:
+    default:
+      Get.offAllNamed(AppRoutes.clientHome);
+      break;
+  }
               }
             },
               child: auth.isLoading.value
