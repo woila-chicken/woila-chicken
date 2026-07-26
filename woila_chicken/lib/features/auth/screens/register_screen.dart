@@ -16,7 +16,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController(text: '+237 ');
   final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
   UserRole _selectedRole = UserRole.client;

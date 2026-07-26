@@ -8,16 +8,15 @@ class FirestoreService extends GetxService {
 
   // ── PRODUITS ──────────────────────────────────────────────────
   Stream<List<Product>> getProducts({String? farmId}) {
-    Query query = _db
-        .collection('products')
-        .where('isActive', isEqualTo: true);
+    Query query = _db.collection('products').where('isActive', isEqualTo: true);
 
     if (farmId != null) {
       query = query.where('farmId', isEqualTo: farmId);
     }
 
-    return query.snapshots().map((snap) =>
-        snap.docs.map((doc) => _productFromDoc(doc)).toList());
+    return query
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) => _productFromDoc(doc)).toList());
   }
 
   Future<void> addProduct(Map<String, dynamic> data) async {
@@ -33,37 +32,33 @@ class FirestoreService extends GetxService {
   }
 
   Future<void> deleteProduct(String id) async {
-    await _db
-        .collection('products')
-        .doc(id)
-        .update({'isActive': false});
+    await _db.collection('products').doc(id).update({'isActive': false});
   }
 
   // ── COMMANDES ─────────────────────────────────────────────────
   Future<String> createOrder(Map<String, dynamic> data) async {
-  try {
-    // Générer une ref simple sans count()
-    final ref = 'WC-${DateTime.now().millisecondsSinceEpoch % 100000}';
-    final commission =
-        ((data['total'] as num) * 0.02).roundToDouble();
+    try {
+      // Générer une ref simple sans count()
+      final ref = 'WC-${DateTime.now().millisecondsSinceEpoch % 100000}';
+      final commission = ((data['total'] as num) * 0.02).roundToDouble();
 
-    final doc = await _db.collection('orders').add({
-      ...data,
-      'productPhotoUrl': data['productPhotoUrl'] ?? '',
-      'ref': ref,
-      'commission': commission,
-      'status': 'pending',
-      'paymentStatus': 'held',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+      final doc = await _db.collection('orders').add({
+        ...data,
+        'productPhotoUrl': data['productPhotoUrl'] ?? '',
+        'ref': ref,
+        'commission': commission,
+        'status': 'pending',
+        'paymentStatus': 'held',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
 
-    debugPrint('Commande créée : ${doc.id} — $ref');
-    return doc.id;
-  } catch (e) {
-    debugPrint('Erreur createOrder: $e');
-    rethrow;
+      debugPrint('Commande créée : ${doc.id} — $ref');
+      return doc.id;
+    } catch (e) {
+      debugPrint('Erreur createOrder: $e');
+      rethrow;
+    }
   }
-}
 
   Stream<List<Map<String, dynamic>>> getClientOrders(String clientId) {
     return _db
@@ -71,9 +66,8 @@ class FirestoreService extends GetxService {
         .where('clientId', isEqualTo: clientId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => {'id': doc.id, ...doc.data()})
-            .toList());
+        .map((snap) =>
+            snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
   }
 
   Stream<List<Map<String, dynamic>>> getFarmOrders(String farmId) {
@@ -82,9 +76,8 @@ class FirestoreService extends GetxService {
         .where('farmId', isEqualTo: farmId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => {'id': doc.id, ...doc.data()})
-            .toList());
+        .map((snap) =>
+            snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
   }
 
   Stream<List<Map<String, dynamic>>> getAllOrders() {
@@ -92,9 +85,8 @@ class FirestoreService extends GetxService {
         .collection('orders')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => {'id': doc.id, ...doc.data()})
-            .toList());
+        .map((snap) =>
+            snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
   }
 
   Future<void> updateOrderStatus(String orderId, String status) async {
@@ -110,9 +102,8 @@ class FirestoreService extends GetxService {
         .collection('farms')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => {'id': doc.id, ...doc.data()})
-            .toList());
+        .map((snap) =>
+            snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
   }
 
   Future<Map<String, dynamic>?> getFarmByOwner(String ownerId) async {
@@ -133,14 +124,10 @@ class FirestoreService extends GetxService {
   }
 
   Future<void> suspendFarm(String farmId) async {
-    await _db
-        .collection('farms')
-        .doc(farmId)
-        .update({'isSuspended': true});
+    await _db.collection('farms').doc(farmId).update({'isSuspended': true});
   }
 
-  Future<void> updateFarm(
-      String farmId, Map<String, dynamic> data) async {
+  Future<void> updateFarm(String farmId, Map<String, dynamic> data) async {
     await _db.collection('farms').doc(farmId).update(data);
   }
 
@@ -161,9 +148,8 @@ class FirestoreService extends GetxService {
         .collection('disputes')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => {'id': doc.id, ...doc.data()})
-            .toList());
+        .map((snap) =>
+            snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
   }
 
   Future<void> resolveDispute(String disputeId) async {
@@ -229,8 +215,7 @@ class FirestoreService extends GetxService {
     for (final doc in orders.docs) {
       final data = doc.data();
       if (data['paymentStatus'] == 'released') {
-        totalCommission +=
-            (data['commission'] as num?)?.toDouble() ?? 0;
+        totalCommission += (data['commission'] as num?)?.toDouble() ?? 0;
       }
     }
 
@@ -245,12 +230,8 @@ class FirestoreService extends GetxService {
 
   // ── PARAMÈTRES ────────────────────────────────────────────────
   Stream<Map<String, dynamic>> getSettings() {
-    return _db
-        .collection('config')
-        .doc('settings')
-        .snapshots()
-        .map((doc) =>
-            doc.exists ? doc.data() ?? _defaultSettings : _defaultSettings);
+    return _db.collection('config').doc('settings').snapshots().map((doc) =>
+        doc.exists ? doc.data() ?? _defaultSettings : _defaultSettings);
   }
 
   Future<void> updateSettings(Map<String, dynamic> data) async {
@@ -262,10 +243,7 @@ class FirestoreService extends GetxService {
 
   Future<bool> isMaintenanceMode() async {
     try {
-      final doc = await _db
-          .collection('config')
-          .doc('settings')
-          .get();
+      final doc = await _db.collection('config').doc('settings').get();
       return doc.data()?['maintenanceMode'] as bool? ?? false;
     } catch (_) {
       return false;
@@ -273,13 +251,11 @@ class FirestoreService extends GetxService {
   }
 
   Future<void> purgeTestData() async {
-    final cutoff = DateTime.now()
-        .subtract(const Duration(hours: 24));
+    final cutoff = DateTime.now().subtract(const Duration(hours: 24));
     final oldOrders = await _db
         .collection('orders')
         .where('status', isEqualTo: 'pending')
-        .where('createdAt',
-            isLessThan: Timestamp.fromDate(cutoff))
+        .where('createdAt', isLessThan: Timestamp.fromDate(cutoff))
         .get();
 
     final batch = _db.batch();
@@ -348,5 +324,26 @@ class FirestoreService extends GetxService {
       imageUrl: photoUrl.isNotEmpty ? photoUrl : imageUrl,
       stockQuantity: (d['quantity'] as num?)?.toInt() ?? 0,
     );
+  }
+
+  Future<Map<String, int>> getFarmStats(String farmId) async {
+    final products = await _db
+        .collection('products')
+        .where('farmId', isEqualTo: farmId)
+        .where('isActive', isEqualTo: true)
+        .count()
+        .get();
+
+    final sales = await _db
+        .collection('orders')
+        .where('farmId', isEqualTo: farmId)
+        .where('status', isEqualTo: 'completed')
+        .count()
+        .get();
+
+    return {
+      'products': products.count ?? 0,
+      'sales': sales.count ?? 0,
+    };
   }
 }

@@ -6,6 +6,7 @@ import '../../../core/services/firestore_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/responsive_layout.dart';
+import '../../../core/widgets/woila_toast.dart';
 import 'maintenance_screen.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -61,8 +62,8 @@ class LoginScreen extends StatelessWidget {
                             'assets/images/logo.png',
                             fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => const Center(
-                                child:
-                                    Icon(Icons.storefront_rounded, color: AppColors.primary, size: 40)),
+                                child: Icon(Icons.storefront_rounded,
+                                    color: AppColors.primary, size: 40)),
                           ),
                         ),
                       ),
@@ -132,7 +133,8 @@ class _BrandPanel extends StatelessWidget {
                       'assets/images/logo.png',
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => const Center(
-                          child: Icon(Icons.set_meal_rounded, color: AppColors.primary, size: 64)),
+                          child: Icon(Icons.set_meal_rounded,
+                              color: AppColors.primary, size: 64)),
                     ),
                   ),
                 ),
@@ -214,12 +216,57 @@ class _LoginForm extends StatelessWidget {
     final emailCtrl = TextEditingController();
     final passCtrl = TextEditingController();
 
+    void showEmailVerificationDialog(AuthService auth) {
+      showDialog(
+        context: Get.context!,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Vérifiez votre email',
+              style: TextStyle(
+                  fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+          content: const Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.mark_email_unread_outlined,
+                size: 48, color: AppColors.primary),
+            SizedBox(height: 12),
+            Text(
+              'Un email de vérification a été envoyé à votre adresse. Vérifiez votre boîte mail puis reconnectez-vous.',
+              style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+          ]),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await auth.currentUser.value?.sendEmailVerification();
+                WoilaToast.info('Email renvoyé', 'Vérifiez votre boîte mail');
+              },
+              child: const Text('Renvoyer',
+                  style: TextStyle(
+                      fontFamily: 'Poppins', color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(Get.context!);
+                auth.logout();
+              },
+              child: const Text('OK, j\'ai compris',
+                  style: TextStyle(fontFamily: 'Poppins')),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Bienvenue',
-            style: Theme.of(context).textTheme.displayMedium),
+        Text('Bienvenue', style: Theme.of(context).textTheme.displayMedium),
         const SizedBox(height: 6),
         Text('Connectez-vous à votre espace',
             style: Theme.of(context).textTheme.bodyMedium),
@@ -230,77 +277,72 @@ class _LoginForm extends StatelessWidget {
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
             labelText: 'Adresse email',
-            prefixIcon: Icon(Icons.email_outlined,
-                color: AppColors.primary),
+            prefixIcon: Icon(Icons.email_outlined, color: AppColors.primary),
           ),
         ),
         const SizedBox(height: 16),
 
-        _PasswordField(controller: passCtrl, label: 'Mot de passe'),      const SizedBox(height: 8),
+        _PasswordField(controller: passCtrl, label: 'Mot de passe'),
+        const SizedBox(height: 8),
 
         // Erreur Firebase
         Obx(() => auth.errorMessage.value.isNotEmpty
-    ? Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.error.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: AppColors.error.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.info_outline,
-                color: AppColors.error, size: 18),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Connexion impossible',
-                      style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.error)),
-                  const SizedBox(height: 3),
-                  Text(
-                    auth.errorMessage.value,
-                    style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 12,
-                        color: AppColors.error,
-                        height: 1.4),
-                  ),
-                ],
-              ),
-            ),
-            GestureDetector(
-              onTap: () => auth.errorMessage.value = '',
-              child: const Icon(Icons.close_rounded,
-                  size: 14,
-                  color: AppColors.error),
-            ),
-          ],
-        ),
-      )
-    : const SizedBox.shrink()),
+            ? Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(12),
+                  border:
+                      Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.info_outline,
+                        color: AppColors.error, size: 18),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Connexion impossible',
+                              style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.error)),
+                          const SizedBox(height: 3),
+                          Text(
+                            auth.errorMessage.value,
+                            style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                color: AppColors.error,
+                                height: 1.4),
+                          ),
+                        ],
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => auth.errorMessage.value = '',
+                      child: const Icon(Icons.close_rounded,
+                          size: 14, color: AppColors.error),
+                    ),
+                  ],
+                ),
+              )
+            : const SizedBox.shrink()),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
             onPressed: () async {
               if (emailCtrl.text.isNotEmpty) {
-                final sent = await auth
-                    .resetPassword(emailCtrl.text.trim());
+                final sent = await auth.resetPassword(emailCtrl.text.trim());
                 Get.snackbar(
                   sent ? 'Email envoyé' : 'Erreur',
-                  sent
-                      ? 'Vérifiez votre boîte mail'
-                      : 'Email introuvable',
-                  backgroundColor:
-                      sent ? AppColors.success : AppColors.error,
+                  sent ? 'Vérifiez votre boîte mail' : 'Email introuvable',
+                  backgroundColor: sent ? AppColors.success : AppColors.error,
                   colorText: Colors.white,
                   snackPosition: SnackPosition.BOTTOM,
                 );
@@ -317,46 +359,52 @@ class _LoginForm extends StatelessWidget {
 
         // Bouton connexion
         Obx(() => ElevatedButton(
-      onPressed: auth.isLoading.value
-          ? null
-          : () async {
-              auth.errorMessage.value = '';
-              final success = await auth.login(
-                email: emailCtrl.text.trim(),
-                password: passCtrl.text,
-              );
-              if (success) {
-                // Vérifier le mode maintenance avant de continuer
-                final firestore = Get.find<FirestoreService>();
-                final isMaintenance =
-                    await firestore.isMaintenanceMode();
+              onPressed: auth.isLoading.value
+                  ? null
+                  : () async {
+                      auth.errorMessage.value = '';
+                      final success = await auth.login(
+                        email: emailCtrl.text.trim(),
+                        password: passCtrl.text,
+                      );
+                      if (success) {
+                        // Vérifier le mode maintenance avant de continuer
+                        final firestore = Get.find<FirestoreService>();
+                        final isMaintenance =
+                            await firestore.isMaintenanceMode();
 
-                if (isMaintenance && !auth.isAdmin.value) {
-                  Get.offAll(() => const MaintenanceScreen());
-                  return;
-                }
+                        if (isMaintenance && !auth.isAdmin.value) {
+                          Get.offAll(() => const MaintenanceScreen());
+                          return;
+                        }
 
-                switch (auth.userRole.value) {
-    case UserRole.admin:
-      Get.offAllNamed(AppRoutes.adminHome);
-      break;
-    case UserRole.eleveur:
-      Get.offAllNamed(AppRoutes.eleveurHome);
-      break;
-    case UserRole.client:
-    default:
-      Get.offAllNamed(AppRoutes.clientHome);
-      break;
-  }
-              }
-            },
+                        final user = Get.find<AuthService>().currentUser.value;
+                        if (user != null && !user.emailVerified) {
+                          // Afficher dialog de vérification
+                          showEmailVerificationDialog(auth);
+                          return;
+                        }
+
+                        switch (auth.userRole.value) {
+                          case UserRole.admin:
+                            Get.offAllNamed(AppRoutes.adminHome);
+                            break;
+                          case UserRole.eleveur:
+                            Get.offAllNamed(AppRoutes.eleveurHome);
+                            break;
+                          case UserRole.client:
+                          default:
+                            Get.offAllNamed(AppRoutes.clientHome);
+                            break;
+                        }
+                      }
+                    },
               child: auth.isLoading.value
                   ? const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white),
+                          strokeWidth: 2, color: Colors.white),
                     )
                   : const Text('Se connecter'),
             )),
@@ -365,10 +413,8 @@ class _LoginForm extends StatelessWidget {
         Row(children: [
           const Expanded(child: Divider()),
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12),
-            child: Text('ou',
-                style: Theme.of(context).textTheme.bodyMedium),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text('ou', style: Theme.of(context).textTheme.bodyMedium),
           ),
           const Expanded(child: Divider()),
         ]),
@@ -409,8 +455,7 @@ class _PasswordFieldState extends State<_PasswordField> {
       validator: widget.validator,
       decoration: InputDecoration(
         labelText: widget.label,
-        prefixIcon: const Icon(Icons.lock_outline,
-            color: AppColors.primary),
+        prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
         suffixIcon: IconButton(
           icon: Icon(
             _obscure

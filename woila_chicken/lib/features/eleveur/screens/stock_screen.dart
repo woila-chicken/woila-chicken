@@ -466,23 +466,26 @@ class _ProductFormPanelState extends State<_ProductFormPanel> {
         // Poids + Quantité
         Row(children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _Label('Poids (kg)'),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _form.weightCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-                  ],
-                  decoration: const InputDecoration(hintText: '2.0'),
-                  validator: (v) => v!.isEmpty ? 'Requis' : null,
-                ),
-              ],
-            ),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const _Label('Poids (kg)'),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _form.weightCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                  // Convertit la virgule en point pour le parsing
+                  TextInputFormatter.withFunction((old, newVal) {
+                    return newVal.copyWith(
+                      text: newVal.text.replaceAll(',', '.'),
+                      selection: newVal.selection,
+                    );
+                  }),
+                ],
+              )
+            ]),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -493,7 +496,8 @@ class _ProductFormPanelState extends State<_ProductFormPanel> {
                 const SizedBox(height: 6),
                 QuantityStepper(
                   value: _form.quantity,
-                  onChanged: (v) => setState(() => _form.quantity = v), max: 1000,
+                  onChanged: (v) => setState(() => _form.quantity = v),
+                  max: 1000,
                 ),
               ],
             ),
@@ -740,9 +744,16 @@ class _ProductFormPageState extends State<_ProductFormPage> {
                             decimal: true),
                         inputFormatters: [
                           FilteringTextInputFormatter.allow(
-                              RegExp(r'^\d*\.?\d*')),
+                              RegExp(r'^\d*[.,]?\d*')),
+                          // Convertit la virgule en point pour le parsing
+                          TextInputFormatter.withFunction((old, newVal) {
+                            return newVal.copyWith(
+                              text: newVal.text.replaceAll(',', '.'),
+                              selection: newVal.selection,
+                            );
+                          }),
                         ],
-                        decoration: const InputDecoration(hintText: '2.0'),
+                        decoration: const InputDecoration(hintText: '2.5'),
                         validator: (v) => v!.isEmpty ? 'Requis' : null,
                       ),
                     ],
@@ -756,9 +767,9 @@ class _ProductFormPageState extends State<_ProductFormPage> {
                       const _Label('Quantité'),
                       const SizedBox(height: 6),
                       QuantityStepper(
-                        value: _form.quantity,
-                        onChanged: (v) => setState(() => _form.quantity = v), max: 1000
-                      ),
+                          value: _form.quantity,
+                          onChanged: (v) => setState(() => _form.quantity = v),
+                          max: 1000),
                     ],
                   ),
                 ),

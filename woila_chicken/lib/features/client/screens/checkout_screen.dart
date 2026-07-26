@@ -30,11 +30,11 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
   final _quartierCtrl = TextEditingController();
   final _villeCtrl = TextEditingController(text: 'Garoua');
   final _indicationCtrl = TextEditingController();
-  final _momoCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController(text: '+237 ');
+  final _momoCtrl = TextEditingController(text: '+237 ');
 
   MobileOperator _operator = MobileOperator.orange;
   bool _isProcessing = false;
@@ -43,11 +43,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   double get _subtotal => widget.product.pricefcfa * widget.quantity;
   double get _total => _subtotal + _deliveryFee;
 
-  String _formatPrice(double p) =>
-      '${p.toStringAsFixed(0).replaceAllMapped(
-            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-            (m) => '${m[1]} ',
-          )} FCFA';
+  String _formatPrice(double p) => '${p.toStringAsFixed(0).replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]} ',
+      )} FCFA';
 
   @override
   void dispose() {
@@ -60,87 +59,84 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
-Future<void> _pay() async {
-  if (!_formKey.currentState!.validate()) return;
-  setState(() => _isProcessing = true);
+  Future<void> _pay() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isProcessing = true);
 
-  try {
-    final auth = Get.find<AuthService>();
-    final firestore = Get.find<FirestoreService>();
-
-    debugPrint('uid: ${auth.uid}');
-    debugPrint('product.farmId: ${widget.product.farmId}');
-    debugPrint('product.id: ${widget.product.id}');
-    debugPrint('total: $_total');
-
-    if (auth.uid.isEmpty) {
-      WoilaToast.error('Erreur', 'Vous devez être connecté');
-      setState(() => _isProcessing = false);
-      return;
-    }
-
-    final orderId = await firestore.createOrder({
-      'clientId': auth.uid,
-      'productPhotoUrl': widget.product.imageUrl ?? '',
-      'clientName': _nameCtrl.text.trim().isEmpty
-          ? 'Client'
-          : _nameCtrl.text.trim(),
-      'clientPhone': _phoneCtrl.text.trim(),
-      'farmId': widget.product.farmId,
-      'farmName': widget.product.farmName,
-      'productId': widget.product.id,
-      'productName':
-          '${widget.product.name} ${widget.product.weightKg}kg',
-      'quantity': widget.quantity,
-      'priceFcfa': widget.product.pricefcfa,
-      'deliveryFee': _deliveryFee,
-      'total': _total,
-      'isDelivery': widget.wantsDelivery,
-      'address': widget.wantsDelivery
-          ? '${_quartierCtrl.text}, ${_villeCtrl.text}'
-          : '',
-      'phone': _phoneCtrl.text.trim(),
-      'operator':
-          _operator == MobileOperator.orange ? 'orange' : 'mtn',
-      'momoNumber': _momoCtrl.text.trim(),
-    });
-
-    debugPrint('orderId obtenu: $orderId');
-
-    // Décrémenter le stock
     try {
-      await FirebaseFirestore.instance
-          .collection('products')
-          .doc(widget.product.id)
-          .update({
-        'quantity': FieldValue.increment(-widget.quantity),
+      final auth = Get.find<AuthService>();
+      final firestore = Get.find<FirestoreService>();
+
+      debugPrint('uid: ${auth.uid}');
+      debugPrint('product.farmId: ${widget.product.farmId}');
+      debugPrint('product.id: ${widget.product.id}');
+      debugPrint('total: $_total');
+
+      if (auth.uid.isEmpty) {
+        WoilaToast.error('Erreur', 'Vous devez être connecté');
+        setState(() => _isProcessing = false);
+        return;
+      }
+
+      final orderId = await firestore.createOrder({
+        'clientId': auth.uid,
+        'productPhotoUrl': widget.product.imageUrl ?? '',
+        'clientName':
+            _nameCtrl.text.trim().isEmpty ? 'Client' : _nameCtrl.text.trim(),
+        'clientPhone': _phoneCtrl.text.trim(),
+        'farmId': widget.product.farmId,
+        'farmName': widget.product.farmName,
+        'productId': widget.product.id,
+        'productName': '${widget.product.name} ${widget.product.weightKg}kg',
+        'quantity': widget.quantity,
+        'priceFcfa': widget.product.pricefcfa,
+        'deliveryFee': _deliveryFee,
+        'total': _total,
+        'isDelivery': widget.wantsDelivery,
+        'address': widget.wantsDelivery
+            ? '${_quartierCtrl.text}, ${_villeCtrl.text}'
+            : '',
+        'phone': _phoneCtrl.text.trim(),
+        'operator': _operator == MobileOperator.orange ? 'orange' : 'mtn',
+        'momoNumber': _momoCtrl.text.trim(),
       });
+
+      debugPrint('orderId obtenu: $orderId');
+
+      // Décrémenter le stock
+      try {
+        await FirebaseFirestore.instance
+            .collection('products')
+            .doc(widget.product.id)
+            .update({
+          'quantity': FieldValue.increment(-widget.quantity),
+        });
+      } catch (e) {
+        debugPrint('Erreur décrémentation stock (non bloquant): $e');
+      }
+
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+
+      Get.off(() => OrderConfirmationScreen(
+            product: widget.product,
+            quantity: widget.quantity,
+            total: _total,
+            wantsDelivery: widget.wantsDelivery,
+            orderRef: orderId,
+          ));
     } catch (e) {
-      debugPrint('Erreur décrémentation stock (non bloquant): $e');
+      debugPrint('Erreur _pay: $e');
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+      WoilaToast.error(
+        'Impossible de passer la commande',
+        e.toString().length > 60
+            ? '${e.toString().substring(0, 60)}...'
+            : e.toString(),
+      );
     }
-
-    if (!mounted) return;
-    setState(() => _isProcessing = false);
-
-    Get.off(() => OrderConfirmationScreen(
-          product: widget.product,
-          quantity: widget.quantity,
-          total: _total,
-          wantsDelivery: widget.wantsDelivery,
-          orderRef: orderId,
-        ));
-  } catch (e) {
-    debugPrint('Erreur _pay: $e');
-    if (!mounted) return;
-    setState(() => _isProcessing = false);
-    WoilaToast.error(
-      'Impossible de passer la commande',
-      e.toString().length > 60
-          ? '${e.toString().substring(0, 60)}...'
-          : e.toString(),
-    );
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -218,8 +214,7 @@ Future<void> _pay() async {
                 _PaymentSection(
                   operator: _operator,
                   momoCtrl: _momoCtrl,
-                  onOperatorChanged: (op) =>
-                      setState(() => _operator = op),
+                  onOperatorChanged: (op) => setState(() => _operator = op),
                 ),
                 const SizedBox(height: 16),
                 _SummarySection(
@@ -253,7 +248,9 @@ class _AddressSection extends StatelessWidget {
       icon: Icons.map_outlined,
       title: 'Adresse de livraison',
       child: Column(children: [
-        _CheckoutField(label: 'Nom complet', hint: 'Ex: Amadou Diallo',
+        _CheckoutField(
+            label: 'Nom complet',
+            hint: 'Ex: Amadou Diallo',
             validator: (v) => v!.isEmpty ? 'Requis' : null),
         const SizedBox(height: 12),
         _CheckoutField(
@@ -357,11 +354,15 @@ class _PaymentSection extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary)),
           const SizedBox(height: 10),
-          const _StepRow(num: '1', text: 'Entrez votre numéro et appuyez sur Payer'),
+          const _StepRow(
+              num: '1', text: 'Entrez votre numéro et appuyez sur Payer'),
           const SizedBox(height: 6),
-          const _StepRow(num: '2', text: 'Vous recevrez une notification sur votre téléphone'),
+          const _StepRow(
+              num: '2',
+              text: 'Vous recevrez une notification sur votre téléphone'),
           const SizedBox(height: 6),
-          const _StepRow(num: '3', text: 'Validez le paiement avec votre code PIN'),
+          const _StepRow(
+              num: '3', text: 'Validez le paiement avec votre code PIN'),
         ],
       ),
     );
@@ -487,7 +488,8 @@ class _SummarySection extends StatelessWidget {
         ),
         if (wantsDelivery) ...[
           const SizedBox(height: 8),
-          _SummaryRow(label: 'Frais de livraison', value: formatPrice(deliveryFee)),
+          _SummaryRow(
+              label: 'Frais de livraison', value: formatPrice(deliveryFee)),
         ],
         const Divider(height: 20),
         Row(

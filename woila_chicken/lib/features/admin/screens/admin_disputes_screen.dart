@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
@@ -12,63 +13,61 @@ class AdminDisputesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final firestore = Get.find<FirestoreService>();
     return StreamBuilder<List<Map<String, dynamic>>>(
-        stream: firestore.getAllDisputes(),
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            );
-          }
-          final disputes = snap.data ?? [];
-          final openCount =
-              disputes.where((d) => d['status'] == 'open').length;
-
-          return Scaffold(
-            backgroundColor: AppColors.background,
-            appBar: AppBar(
-              title: const Text('Gestion des litiges'),
-              backgroundColor: AppColors.adminColor,
-              automaticallyImplyLeading: true,
-              actions: [
-                if (openCount > 0)
-                  Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.error,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text('$openCount ouverts',
-                        style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white)),
-                  ),
-              ],
-            ),
-            body: ResponsiveLayout(
-              desktop: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: _buildList(context, disputes, firestore),
-                ),
-              ),
-              mobile: _buildList(context, disputes, firestore),
-            ),
+      stream: firestore.getAllDisputes(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
           );
-        },
+        }
+        final disputes = snap.data ?? [];
+        final openCount = disputes.where((d) => d['status'] == 'open').length;
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: const Text('Gestion des litiges'),
+            backgroundColor: AppColors.adminColor,
+            automaticallyImplyLeading: true,
+            actions: [
+              if (openCount > 0)
+                Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text('$openCount ouverts',
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white)),
+                ),
+            ],
+          ),
+          body: ResponsiveLayout(
+            desktop: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: _buildList(context, disputes, firestore),
+              ),
+            ),
+            mobile: _buildList(context, disputes, firestore),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildList(BuildContext context,
-      List<Map<String, dynamic>> disputes, FirestoreService firestore) {
+  Widget _buildList(BuildContext context, List<Map<String, dynamic>> disputes,
+      FirestoreService firestore) {
     if (disputes.isEmpty) {
       return const Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.gavel_rounded,
-              size: 64, color: AppColors.textSecondary),
+          Icon(Icons.gavel_rounded, size: 64, color: AppColors.textSecondary),
           SizedBox(height: 12),
           Text('Aucun litige',
               style: TextStyle(
@@ -138,8 +137,8 @@ class AdminDisputesScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
@@ -155,8 +154,8 @@ class AdminDisputesScreen extends StatelessWidget {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
@@ -205,13 +204,13 @@ class AdminDisputesScreen extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () async {
                         await firestore.resolveDispute(d['id']);
-                        WoilaToast.success('Litige résolu', 'Le litige a été marqué comme résolu');
+                        WoilaToast.success('Litige résolu',
+                            'Le litige a été marqué comme résolu');
                       },
-                      icon: const Icon(
-                          Icons.check_circle_outline, size: 16),
+                      icon: const Icon(Icons.check_circle_outline, size: 16),
                       label: const Text('Résoudre',
-                          style: TextStyle(
-                              fontFamily: 'Poppins', fontSize: 12)),
+                          style:
+                              TextStyle(fontFamily: 'Poppins', fontSize: 12)),
                       style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.success),
                     ),
@@ -219,12 +218,11 @@ class AdminDisputesScreen extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () =>
-                          _showContactDialog(context, d),
+                      onPressed: () => _showContactDialog(context, d),
                       icon: const Icon(Icons.chat_outlined, size: 16),
                       label: const Text('Contacter',
-                          style: TextStyle(
-                              fontFamily: 'Poppins', fontSize: 12)),
+                          style:
+                              TextStyle(fontFamily: 'Poppins', fontSize: 12)),
                     ),
                   ),
                   if (isOpen) ...[
@@ -235,12 +233,10 @@ class AdminDisputesScreen extends StatelessWidget {
                             .getAllDisputes()
                             .first
                             .then((_) async {
-                          await FirestoreService()
-                              .resolveDispute(d['id']);
+                          await FirestoreService().resolveDispute(d['id']);
                         });
                       },
-                      icon: const Icon(
-                          Icons.pending_actions_outlined,
+                      icon: const Icon(Icons.pending_actions_outlined,
                           color: AppColors.warning),
                       tooltip: 'Marquer en cours',
                     ),
@@ -254,50 +250,143 @@ class AdminDisputesScreen extends StatelessWidget {
     );
   }
 
-  void _showContactDialog(
-      BuildContext context, Map<String, dynamic> dispute) {
+  void _showContactDialog(BuildContext context, Map<String, dynamic> dispute) {
+    final firestore = Get.find<FirestoreService>();
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Contacter les parties',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700)),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListTile(
-            leading: const Icon(Icons.person_outline,
-                color: AppColors.primary),
-            title: Text(
-                dispute['clientId'] as String? ?? 'Client',
-                style: const TextStyle(
-                    fontFamily: 'Poppins', fontSize: 13)),
-            subtitle: const Text('Client',
-                style: TextStyle(
-                    fontFamily: 'Poppins', fontSize: 11)),
-            onTap: () {},
-          ),
-          ListTile(
-            leading: const Icon(Icons.store_outlined,
-                color: AppColors.primary),
-            title: Text(
-                dispute['farmId'] as String? ?? 'Éleveur',
-                style: const TextStyle(
-                    fontFamily: 'Poppins', fontSize: 13)),
-            subtitle: const Text('Éleveur',
-                style: TextStyle(
-                    fontFamily: 'Poppins', fontSize: 11)),
-            onTap: () {},
-          ),
-        ]),
+            style:
+                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+        content: FutureBuilder<List<Map<String, dynamic>?>>(
+          future: Future.wait([
+            // Charger les infos client
+            FirebaseFirestore.instance
+                .collection('users')
+                .doc(dispute['clientId'] as String? ?? '')
+                .get()
+                .then((d) => d.exists ? d.data() : null),
+            // Charger les infos ferme
+            FirebaseFirestore.instance
+                .collection('farms')
+                .doc(dispute['farmId'] as String? ?? '')
+                .get()
+                .then((d) => d.exists ? d.data() : null),
+          ]),
+          builder: (context, snap) {
+            if (!snap.hasData) {
+              return const SizedBox(
+                height: 80,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final client = snap.data?[0];
+            final farm = snap.data?[1];
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Client
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.person_outline,
+                        color: AppColors.primary, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            client?['name'] as String? ?? 'Client inconnu',
+                            style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600),
+                          ),
+                          if ((client?['phone'] as String? ?? '').isNotEmpty)
+                            Text(
+                              client!['phone'] as String,
+                              style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  color: AppColors.primary),
+                            ),
+                          if ((client?['email'] as String? ?? '').isNotEmpty)
+                            Text(
+                              client!['email'] as String,
+                              style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const Text('Client',
+                        style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: AppColors.textSecondary)),
+                  ]),
+                ),
+                const SizedBox(height: 10),
+                // Ferme
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.store_outlined,
+                        color: AppColors.primary, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            farm?['name'] as String? ?? 'Ferme inconnue',
+                            style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600),
+                          ),
+                          if ((farm?['phone'] as String? ?? '').isNotEmpty)
+                            Text(
+                              farm!['phone'] as String,
+                              style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  color: AppColors.primary),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const Text('Éleveur',
+                        style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: AppColors.textSecondary)),
+                  ]),
+                ),
+              ],
+            );
+          },
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Fermer',
                 style: TextStyle(
-                    fontFamily: 'Poppins',
-                    color: AppColors.textSecondary)),
+                    fontFamily: 'Poppins', color: AppColors.textSecondary)),
           ),
         ],
       ),
@@ -309,8 +398,18 @@ class AdminDisputesScreen extends StatelessWidget {
     try {
       final dt = (timestamp as dynamic).toDate();
       const months = [
-        'jan', 'fév', 'mar', 'avr', 'mai', 'juin',
-        'juil', 'août', 'sep', 'oct', 'nov', 'déc'
+        'jan',
+        'fév',
+        'mar',
+        'avr',
+        'mai',
+        'juin',
+        'juil',
+        'août',
+        'sep',
+        'oct',
+        'nov',
+        'déc'
       ];
       return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
     } catch (_) {

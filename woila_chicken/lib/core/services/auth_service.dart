@@ -71,6 +71,9 @@ class AuthService extends GetxService {
         password: password,
       );
 
+      // Envoyer email de vérification
+      await cred.user?.sendEmailVerification();
+
       final token = await FirebaseService.getFcmToken();
 
       // Créer le profil dans Firestore
@@ -111,38 +114,39 @@ class AuthService extends GetxService {
 
   // ── Connexion ─────────────────────────────────────────────────
   Future<bool> login({
-  required String email,
-  required String password,
-}) async {
-  try {
-    isLoading.value = true;
-    errorMessage.value = '';
+    required String email,
+    required String password,
+  }) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
 
-    final cred = await _auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-    // ← Attendre que le rôle soit chargé AVANT de retourner
-    await _loadUserRole(cred.user!.uid);
+      // ← Attendre que le rôle soit chargé AVANT de retourner
+      await _loadUserRole(cred.user!.uid);
 
-    // Mettre à jour le token FCM
-    final token = await FirebaseService.getFcmToken();
-    if (token != null) {
-      await _db
-          .collection('users')
-          .doc(cred.user!.uid)
-          .update({'fcmToken': token});
+      // Mettre à jour le token FCM
+      final token = await FirebaseService.getFcmToken();
+      if (token != null) {
+        await _db
+            .collection('users')
+            .doc(cred.user!.uid)
+            .update({'fcmToken': token});
+      }
+
+      return true;
+    } on FirebaseAuthException catch (e) {
+      errorMessage.value = _authError(e.code);
+      return false;
+    } finally {
+      isLoading.value = false;
     }
-
-    return true;
-  } on FirebaseAuthException catch (e) {
-    errorMessage.value = _authError(e.code);
-    return false;
-  } finally {
-    isLoading.value = false;
   }
-}
+
   // ── Déconnexion ───────────────────────────────────────────────
   Future<void> logout() async {
     await _auth.signOut();
@@ -159,36 +163,37 @@ class AuthService extends GetxService {
     }
   }
 
- String _authError(String code) {
-  switch (code) {
-    case 'user-not-found':
-      return 'Aucun compte ne correspond à cet email. Vérifiez l\'adresse ou créez un compte.';
-    case 'wrong-password':
-      return 'Mot de passe incorrect. Vérifiez votre saisie ou réinitialisez votre mot de passe.';
-    case 'invalid-credential':
-      return 'Email ou mot de passe incorrect. Vérifiez vos informations.';
-    case 'email-already-in-use':
-      return 'Un compte existe déjà avec cet email. Connectez-vous plutôt.';
-    case 'weak-password':
-      return 'Mot de passe trop faible. Utilisez au moins 6 caractères avec des chiffres.';
-    case 'invalid-email':
-      return 'Adresse email invalide. Vérifiez le format (exemple@domaine.com).';
-    case 'too-many-requests':
-      return 'Trop de tentatives échouées. Votre compte est temporairement bloqué. Réessayez dans quelques minutes.';
-    case 'network-request-failed':
-      return 'Pas de connexion internet. Vérifiez votre réseau et réessayez.';
-    case 'user-disabled':
-      return 'Ce compte a été désactivé. Contactez le support à woila.chicken.cm@gmail.com.';
-    case 'operation-not-allowed':
-      return 'Connexion non autorisée. Contactez le support.';
-    case 'account-exists-with-different-credential':
-      return 'Un compte existe avec cet email mais avec un autre mode de connexion.';
-    case 'requires-recent-login':
-      return 'Cette action nécessite une reconnexion récente. Déconnectez-vous et reconnectez-vous.';
-    default:
-      return 'Une erreur inattendue s\'est produite (code: $code). Réessayez ou contactez le support.';
+  String _authError(String code) {
+    switch (code) {
+      case 'user-not-found':
+        return 'Aucun compte ne correspond à cet email. Vérifiez l\'adresse ou créez un compte.';
+      case 'wrong-password':
+        return 'Mot de passe incorrect. Vérifiez votre saisie ou réinitialisez votre mot de passe.';
+      case 'invalid-credential':
+        return 'Email ou mot de passe incorrect. Vérifiez vos informations.';
+      case 'email-already-in-use':
+        return 'Un compte existe déjà avec cet email. Connectez-vous plutôt.';
+      case 'weak-password':
+        return 'Mot de passe trop faible. Utilisez au moins 6 caractères avec des chiffres.';
+      case 'invalid-email':
+        return 'Adresse email invalide. Vérifiez le format (exemple@domaine.com).';
+      case 'too-many-requests':
+        return 'Trop de tentatives échouées. Votre compte est temporairement bloqué. Réessayez dans quelques minutes.';
+      case 'network-request-failed':
+        return 'Pas de connexion internet. Vérifiez votre réseau et réessayez.';
+      case 'user-disabled':
+        return 'Ce compte a été désactivé. Contactez le support à woila.chicken.cm@gmail.com.';
+      case 'operation-not-allowed':
+        return 'Connexion non autorisée. Contactez le support.';
+      case 'account-exists-with-different-credential':
+        return 'Un compte existe avec cet email mais avec un autre mode de connexion.';
+      case 'requires-recent-login':
+        return 'Cette action nécessite une reconnexion récente. Déconnectez-vous et reconnectez-vous.';
+      default:
+        return 'Une erreur inattendue s\'est produite (code: $code). Réessayez ou contactez le support.';
+    }
   }
-}
+
   // Getters utiles
   String get uid => currentUser.value?.uid ?? '';
   bool get isLoggedIn => currentUser.value != null;

@@ -58,8 +58,7 @@ class CartScreen extends StatelessWidget {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(24),
                     itemCount: ctrl.items.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: 12),
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (_, i) =>
                         _CartItemCard(item: ctrl.items[i], ctrl: ctrl),
                   ),
@@ -81,8 +80,7 @@ class CartScreen extends StatelessWidget {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: ctrl.items.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: 10),
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (_, i) =>
                         _CartItemCard(item: ctrl.items[i], ctrl: ctrl),
                   ),
@@ -99,8 +97,7 @@ class CartScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.shopping_cart_outlined,
-              size: 80,
-              color: AppColors.textSecondary.withValues(alpha: 0.3)),
+              size: 80, color: AppColors.textSecondary.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           const Text('Votre panier est vide',
               style: TextStyle(
@@ -130,14 +127,11 @@ class CartScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Vider le panier ?',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700)),
-        content: const Text(
-            'Tous les articles seront supprimés.',
+            style:
+                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+        content: const Text('Tous les articles seront supprimés.',
             style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
@@ -147,18 +141,15 @@ class CartScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler',
                 style: TextStyle(
-                    fontFamily: 'Poppins',
-                    color: AppColors.textSecondary)),
+                    fontFamily: 'Poppins', color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
               ctrl.clear();
               Navigator.pop(context);
             },
-            child: const Text('Vider',
-                style: TextStyle(fontFamily: 'Poppins')),
+            child: const Text('Vider', style: TextStyle(fontFamily: 'Poppins')),
           ),
         ],
       ),
@@ -189,10 +180,10 @@ class _CartItemCard extends StatelessWidget {
           Row(children: [
             // Image
             ProductImage(
-  imageUrl: item.product.imageUrl,
-  width: 64,
-  height: 64,
-),
+              imageUrl: item.product.imageUrl,
+              width: 64,
+              height: 64,
+            ),
             const SizedBox(width: 12),
 
             // Infos
@@ -233,53 +224,49 @@ class _CartItemCard extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.delete_outline,
                   color: AppColors.error, size: 20),
-              onPressed: () =>
-                  ctrl.removeItem(item.product.id),
+              onPressed: () => ctrl.removeItem(item.product.id),
             ),
           ]),
           const SizedBox(height: 12),
 
           // Mode livraison
-          if (item.product.deliveryAvailable &&
-              item.product.pickupAvailable)
+          if (item.product.deliveryAvailable && item.product.pickupAvailable)
             Row(children: [
               _ModeChip(
                 label: '🚚 Livraison',
                 isSelected: item.wantsDelivery,
-                onTap: () => ctrl.toggleDelivery(
-                    item.product.id, true),
+                onTap: () => ctrl.toggleDelivery(item.product.id, true),
               ),
               const SizedBox(width: 8),
               _ModeChip(
                 label: '🏪 Retrait',
                 isSelected: !item.wantsDelivery,
-                onTap: () => ctrl.toggleDelivery(
-                    item.product.id, false),
+                onTap: () => ctrl.toggleDelivery(item.product.id, false),
               ),
             ]),
-          if (item.product.deliveryAvailable &&
-              !item.product.pickupAvailable)
+          if (item.product.deliveryAvailable && !item.product.pickupAvailable)
             const Row(children: [
-  Icon(Icons.local_shipping_rounded,
-      size: 14, color: AppColors.textSecondary),
-  SizedBox(width: 5),
-  Text('Livraison uniquement',style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11,
-                    color: AppColors.textSecondary) ),
-]),
-            
+              Icon(Icons.local_shipping_rounded,
+                  size: 14, color: AppColors.textSecondary),
+              SizedBox(width: 5),
+              Text('Livraison uniquement',
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 11,
+                      color: AppColors.textSecondary)),
+            ]),
+
           if (!item.product.deliveryAvailable)
             const Row(children: [
-  Icon(Icons.storefront_rounded,
-      size: 14, color: AppColors.textSecondary),
-  SizedBox(width: 5),
-  Text('Retrait à la ferme', style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11,
-                    color: AppColors.textSecondary)),
-]),
-          
+              Icon(Icons.storefront_rounded,
+                  size: 14, color: AppColors.textSecondary),
+              SizedBox(width: 5),
+              Text('Retrait à la ferme',
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 11,
+                      color: AppColors.textSecondary)),
+            ]),
 
           const SizedBox(height: 12),
 
@@ -291,28 +278,42 @@ class _CartItemCard extends StatelessWidget {
                 border: Border.all(color: AppColors.divider),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                _QtyBtn(
-                  icon: Icons.remove,
-                  onTap: () => ctrl.decrementQuantity(
-                      item.product.id),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16),
-                  child: Text(
-                    '${item.quantity}',
-                    style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary),
+              child:
+                  // Dans _CartItemCard, remplace le sélecteur local par :
+                  Row(children: [
+                InkWell(
+                  onTap: () => ctrl.decrementQuantity(item.product.id),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.divider),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.remove_rounded,
+                        size: 16, color: AppColors.primary),
                   ),
                 ),
-                _QtyBtn(
-                  icon: Icons.add,
-                  onTap: () => ctrl.incrementQuantity(
-                      item.product.id),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('${item.quantity}',
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700)),
+                ),
+                InkWell(
+                  onTap: () => ctrl.incrementQuantity(item.product.id),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.divider),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.add_rounded,
+                        size: 16, color: AppColors.primary),
+                  ),
                 ),
               ]),
             ),
@@ -320,16 +321,14 @@ class _CartItemCard extends StatelessWidget {
             // Sous-total ligne
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text(
-                ctrl.formatPrice(
-                    item.product.pricefcfa * item.quantity),
+                ctrl.formatPrice(item.product.pricefcfa * item.quantity),
                 style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primary),
               ),
-              if (item.wantsDelivery &&
-                  item.product.deliveryAvailable)
+              if (item.wantsDelivery && item.product.deliveryAvailable)
                 Text(
                   '+ ${ctrl.formatPrice(500)} livraison',
                   style: const TextStyle(
@@ -360,8 +359,8 @@ class _SummaryPanel extends StatelessWidget {
           decoration: isMobile
               ? BoxDecoration(
                   color: Colors.white,
-                  borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(20)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20)),
                   boxShadow: [
                     BoxShadow(
                         color: Colors.black.withValues(alpha: 0.08),
@@ -443,8 +442,7 @@ class _SummaryPanel extends StatelessWidget {
               ElevatedButton(
                 onPressed: () => _goToCheckout(),
                 style: ElevatedButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 14)),
+                    padding: const EdgeInsets.symmetric(vertical: 14)),
                 child: Text(
                   'Commander — ${ctrl.formatPrice(ctrl.total)}',
                   style: const TextStyle(
@@ -504,9 +502,7 @@ class _ModeChip extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   const _ModeChip(
-      {required this.label,
-      required this.isSelected,
-      required this.onTap});
+      {required this.label, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -526,27 +522,27 @@ class _ModeChip extends StatelessWidget {
           ),
         ),
         child: Row(
-  mainAxisSize: MainAxisSize.min,
-  children: [
-    Icon(
-      label == 'Livraison'
-          ? Icons.local_shipping_rounded
-          : Icons.storefront_rounded,
-      size: 14,
-      color: isSelected ? AppColors.primary : AppColors.textSecondary,
-    ),
-    const SizedBox(width: 5),
-    Text(label, style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 12,
-                fontWeight: isSelected
-                    ? FontWeight.w600
-                    : FontWeight.normal,
-                color: isSelected
-                    ? AppColors.primary
-                    : AppColors.textPrimary)),
-  ],
-),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              label == 'Livraison'
+                  ? Icons.local_shipping_rounded
+                  : Icons.storefront_rounded,
+              size: 14,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 5),
+            Text(label,
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.textPrimary)),
+          ],
+        ),
       ),
     );
   }

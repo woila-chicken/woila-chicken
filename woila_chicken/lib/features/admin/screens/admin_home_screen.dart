@@ -63,8 +63,8 @@ class _DesktopAdminLayout extends StatelessWidget {
               children: [
                 // Header
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 24),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                   child: Row(
                     children: [
                       Container(
@@ -88,8 +88,7 @@ class _DesktopAdminLayout extends StatelessWidget {
                       const SizedBox(width: 10),
                       const Expanded(
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Admin',
                                 style: TextStyle(
@@ -134,8 +133,7 @@ class _DesktopAdminLayout extends StatelessWidget {
                       activeIcon: Icons.store_mall_directory,
                       label: 'Fermes',
                       isSelected: selectedIndex == 1,
-                      onTap: () => Get.to(
-                          () => const AdminFarmsScreen()),
+                      onTap: () => Get.to(() => const AdminFarmsScreen()),
                       badge: pending > 0 ? '$pending' : null,
                     );
                   },
@@ -153,8 +151,7 @@ class _DesktopAdminLayout extends StatelessWidget {
                       activeIcon: Icons.gavel,
                       label: 'Litiges',
                       isSelected: selectedIndex == 2,
-                      onTap: () => Get.to(
-                          () => const AdminDisputesScreen()),
+                      onTap: () => Get.to(() => const AdminDisputesScreen()),
                       badge: open > 0 ? '$open' : null,
                     );
                   },
@@ -166,8 +163,7 @@ class _DesktopAdminLayout extends StatelessWidget {
                   activeIcon: Icons.bar_chart,
                   label: 'Statistiques',
                   isSelected: selectedIndex == 3,
-                  onTap: () => Get.to(
-                      () => const AdminStatisticsScreen()),
+                  onTap: () => Get.to(() => const AdminStatisticsScreen()),
                 ),
 
                 // Paramètres
@@ -176,8 +172,7 @@ class _DesktopAdminLayout extends StatelessWidget {
                   activeIcon: Icons.settings,
                   label: 'Paramètres',
                   isSelected: selectedIndex == 4,
-                  onTap: () => Get.to(
-                      () => const AdminSettingsScreen()),
+                  onTap: () => Get.to(() => const AdminSettingsScreen()),
                 ),
 
                 const Spacer(),
@@ -221,14 +216,11 @@ class _DesktopAdminLayout extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Se déconnecter ?',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700)),
-        content: const Text(
-            'Vous serez redirigé vers l\'écran de connexion.',
+            style:
+                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+        content: const Text('Vous serez redirigé vers l\'écran de connexion.',
             style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
@@ -238,12 +230,10 @@ class _DesktopAdminLayout extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler',
                 style: TextStyle(
-                    fontFamily: 'Poppins',
-                    color: AppColors.textSecondary)),
+                    fontFamily: 'Poppins', color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
               Navigator.pop(context);
               auth.logout();
@@ -290,8 +280,7 @@ class _MobileAdminLayout extends StatelessWidget {
                       .length;
                   final pendingFarms = (farmSnap.data ?? [])
                       .where((f) =>
-                          f['isVerified'] == false &&
-                          f['isSuspended'] == false)
+                          f['isVerified'] == false && f['isSuspended'] == false)
                       .length;
                   final total = openDisputes + pendingFarms;
 
@@ -302,8 +291,7 @@ class _MobileAdminLayout extends StatelessWidget {
                       alignment: Alignment.center,
                       children: [
                         IconButton(
-                          icon: const Icon(
-                              Icons.notifications_outlined),
+                          icon: const Icon(Icons.notifications_outlined),
                           onPressed: () {
                             Get.snackbar(
                               'Notifications',
@@ -367,8 +355,7 @@ class _MobileAdminLayout extends StatelessWidget {
                   .length;
               final pendingFarms = (farmSnap.data ?? [])
                   .where((f) =>
-                      f['isVerified'] == false &&
-                      f['isSuspended'] == false)
+                      f['isVerified'] == false && f['isSuspended'] == false)
                   .length;
 
               return BottomNavigationBar(
@@ -437,14 +424,11 @@ class _MobileAdminLayout extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Se déconnecter ?',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700)),
-        content: const Text(
-            'Vous serez redirigé vers l\'écran de connexion.',
+            style:
+                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+        content: const Text('Vous serez redirigé vers l\'écran de connexion.',
             style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
@@ -454,12 +438,10 @@ class _MobileAdminLayout extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler',
                 style: TextStyle(
-                    fontFamily: 'Poppins',
-                    color: AppColors.textSecondary)),
+                    fontFamily: 'Poppins', color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
               Navigator.pop(context);
               auth.logout();
@@ -499,8 +481,7 @@ class _BadgeIcon extends StatelessWidget {
               width: 14,
               height: 14,
               decoration: const BoxDecoration(
-                  color: AppColors.error,
-                  shape: BoxShape.circle),
+                  color: AppColors.error, shape: BoxShape.circle),
               child: Center(
                 child: Text(
                   count > 9 ? '9+' : '$count',
@@ -517,6 +498,7 @@ class _BadgeIcon extends StatelessWidget {
     );
   }
 }
+
 // ─────────────────────────────────────────────────────────────────
 //  Corps partagé dashboard admin
 // ─────────────────────────────────────────────────────────────────
@@ -936,12 +918,20 @@ class _FarmRow extends StatelessWidget {
                       fontFamily: 'Poppins',
                       fontSize: 13,
                       fontWeight: FontWeight.w600)),
-              Text(
-                '${farm['products'] ?? 0} produits · ${farm['sales'] ?? 0} ventes ce mois',
-                style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11,
-                    color: AppColors.textSecondary),
+              FutureBuilder<Map<String, int>>(
+                future: Get.find<FirestoreService>()
+                    .getFarmStats(farm['id'] as String? ?? ''),
+                builder: (context, snap) {
+                  final products = snap.data?['products'] ?? 0;
+                  final sales = snap.data?['sales'] ?? 0;
+                  return Text(
+                    '$products produits · $sales ventes',
+                    style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 11,
+                        color: AppColors.textSecondary),
+                  );
+                },
               ),
             ],
           ),
@@ -1095,16 +1085,14 @@ class _AdminTopBar extends StatelessWidget {
             stream: firestore.getAllDisputes(),
             builder: (context, snap) {
               final disputes = snap.data ?? [];
-              final open = disputes
-                  .where((d) => d['status'] == 'open')
-                  .length;
+              final open = disputes.where((d) => d['status'] == 'open').length;
               if (open == 0) return const SizedBox.shrink();
               return InkWell(
                 onTap: () => Get.to(() => const AdminDisputesScreen()),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -1145,8 +1133,7 @@ class _AdminTopBar extends StatelessWidget {
                       .length;
                   final pendingFarms = (farmSnap.data ?? [])
                       .where((f) =>
-                          f['isVerified'] == false &&
-                          f['isSuspended'] == false)
+                          f['isVerified'] == false && f['isSuspended'] == false)
                       .length;
                   final total = openDisputes + pendingFarms;
 
@@ -1157,8 +1144,7 @@ class _AdminTopBar extends StatelessWidget {
                       alignment: Alignment.center,
                       children: [
                         IconButton(
-                          icon: const Icon(
-                              Icons.notifications_outlined,
+                          icon: const Icon(Icons.notifications_outlined,
                               color: AppColors.textSecondary),
                           onPressed: () {
                             Get.snackbar(
