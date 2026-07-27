@@ -25,9 +25,25 @@ class LoginScreen extends StatelessWidget {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 400),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(40),
-                    child: _LoginForm(),
+                  child: Stack(
+                    children: [
+                      SingleChildScrollView(
+                        padding: const EdgeInsets.all(40),
+                        child: _LoginForm(),
+                      ),
+                      Positioned(
+                          bottom: 12,
+                          right: 16,
+                          child: Text(
+                            'version: 1.0.0',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 10,
+                              color: AppColors.textSecondary
+                                  .withValues(alpha: 0.4),
+                            ),
+                          ))
+                    ],
                   ),
                 ),
               ),
@@ -36,63 +52,77 @@ class LoginScreen extends StatelessWidget {
         ),
 
         // ── Vue Mobile : une colonne ─────────────────────────────
-        mobile: SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                color: AppColors.primary,
-                child: Column(
-                  children: [
-                    Container(
-                      width: 90,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: AppColors.accent.withValues(alpha: 0.5),
-                            width: 2.5),
-                      ),
-                      child: ClipOval(
-                        child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Center(
-                                child: Icon(Icons.storefront_rounded,
-                                    color: AppColors.primary, size: 40)),
+        mobile: Stack(children: [
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  color: AppColors.primary,
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: AppColors.accent.withValues(alpha: 0.5),
+                              width: 2.5),
+                        ),
+                        child: ClipOval(
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const Center(
+                                  child: Icon(Icons.storefront_rounded,
+                                      color: AppColors.primary, size: 40)),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('WOÏLA CHICKEN',
-                        style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: 2)),
-                    const SizedBox(height: 4),
-                    Text('La ferme à portée de main',
-                        style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.75))),
-                  ],
+                      const SizedBox(height: 16),
+                      const Text('WOÏLA CHICKEN',
+                          style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: 2)),
+                      const SizedBox(height: 4),
+                      Text('La ferme à portée de main',
+                          style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.75))),
+                    ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                child: _LoginForm(),
-              ),
-            ],
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  child: _LoginForm(),
+                ),
+              ],
+            ),
           ),
-        ),
+          Positioned(
+            bottom: 12,
+            right: 16,
+            child: Text(
+              'version: 1.0.0',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 10,
+                color: AppColors.textSecondary.withValues(alpha: 0.4),
+              ),
+            ),
+          )
+        ]),
       ),
     );
   }
