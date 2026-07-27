@@ -59,8 +59,8 @@ class CartScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(24),
                     itemCount: ctrl.items.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) =>
-                        _CartItemCard(item: ctrl.items[i], ctrl: ctrl),
+                    itemBuilder: (_, i) => Obx(
+                        () => _CartItemCard(item: ctrl.items[i], ctrl: ctrl)),
                   ),
                 ),
                 Container(width: 1, color: AppColors.divider),
@@ -81,8 +81,8 @@ class CartScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     itemCount: ctrl.items.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (_, i) =>
-                        _CartItemCard(item: ctrl.items[i], ctrl: ctrl),
+                    itemBuilder: (_, i) => Obx(
+                        () => _CartItemCard(item: ctrl.items[i], ctrl: ctrl)),
                   ),
                 ),
                 _SummaryPanel(ctrl: ctrl, isMobile: true),
@@ -278,41 +278,73 @@ class _CartItemCard extends StatelessWidget {
                 border: Border.all(color: AppColors.divider),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child:
-                  // Dans _CartItemCard, remplace le sélecteur local par :
-                  Row(children: [
+              child: Row(children: [
                 InkWell(
                   onTap: () => ctrl.decrementQuantity(item.product.id),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    bottomLeft: Radius.circular(8),
+                  ),
                   child: Container(
-                    width: 32,
-                    height: 32,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       border: Border.all(color: AppColors.divider),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                        bottomLeft: Radius.circular(8),
+                      ),
                     ),
-                    child: const Icon(Icons.remove_rounded,
-                        size: 16, color: AppColors.primary),
+                    child: Icon(
+                      Icons.remove_rounded,
+                      size: 16,
+                      color: item.quantity > 1
+                          ? AppColors.primary
+                          : AppColors.textSecondary.withValues(alpha: 0.3),
+                    ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('${item.quantity}',
+                Container(
+                  width: 44,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: AppColors.divider),
+                      bottom: BorderSide(color: AppColors.divider),
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${item.quantity}',
                       style: const TextStyle(
                           fontFamily: 'Poppins',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700)),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary),
+                    ),
+                  ),
                 ),
                 InkWell(
                   onTap: () => ctrl.incrementQuantity(item.product.id),
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
+                  ),
                   child: Container(
-                    width: 32,
-                    height: 32,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       border: Border.all(color: AppColors.divider),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: const BorderRadius.only(
+                        topRight: Radius.circular(8),
+                        bottomRight: Radius.circular(8),
+                      ),
                     ),
-                    child: const Icon(Icons.add_rounded,
-                        size: 16, color: AppColors.primary),
+                    child: const Icon(
+                      Icons.add_rounded,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
               ]),

@@ -35,7 +35,7 @@ class LoginScreen extends StatelessWidget {
                           bottom: 12,
                           right: 16,
                           child: Text(
-                            'version: 1.0.0',
+                            'version: 1.0.1',
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 10,
@@ -114,7 +114,7 @@ class LoginScreen extends StatelessWidget {
             bottom: 12,
             right: 16,
             child: Text(
-              'version: 1.0.0',
+              'version: 1.0.1',
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 10,
@@ -405,13 +405,6 @@ class _LoginForm extends StatelessWidget {
 
                         if (isMaintenance && !auth.isAdmin.value) {
                           Get.offAll(() => const MaintenanceScreen());
-                          return;
-                        }
-
-                        final user = Get.find<AuthService>().currentUser.value;
-                        if (user != null && !user.emailVerified) {
-                          // Afficher dialog de vérification
-                          showEmailVerificationDialog(auth);
                           return;
                         }
 
