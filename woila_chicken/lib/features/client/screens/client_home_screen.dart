@@ -27,8 +27,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (!Get.isRegistered<CatalogueController>()) {
-    Get.put(CatalogueController());
-  }
+      Get.put(CatalogueController());
+    }
     return ResponsiveLayout(
       desktop: _DesktopClientLayout(
         selectedIndex: _selectedIndex,
@@ -278,57 +278,57 @@ class _ClientHomeBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Stats rapides
-         StreamBuilder<List<Map<String, dynamic>>>(
-  stream: Get.find<FirestoreService>().getAllFarms(),
-  builder: (context, farmSnap) {
-    return StreamBuilder<List<Product>>(
-      stream: Get.find<FirestoreService>().getProducts(),
-      builder: (context, productSnap) {
-        final farms = farmSnap.data ?? [];
-        final verifiedFarms =
-            farms.where((f) => f['isVerified'] == true).toList();
-        final products = productSnap.data ?? [];
+        StreamBuilder<List<Map<String, dynamic>>>(
+          stream: Get.find<FirestoreService>().getAllFarms(),
+          builder: (context, farmSnap) {
+            return StreamBuilder<List<Product>>(
+              stream: Get.find<FirestoreService>().getProducts(),
+              builder: (context, productSnap) {
+                final farms = farmSnap.data ?? [];
+                final verifiedFarms =
+                    farms.where((f) => f['isVerified'] == true).toList();
+                final products = productSnap.data ?? [];
 
-        double avgRating = 0;
-        if (verifiedFarms.isNotEmpty) {
-          final ratings = verifiedFarms
-              .map((f) => (f['rating'] as num?)?.toDouble() ?? 0)
-              .where((r) => r > 0)
-              .toList();
-          if (ratings.isNotEmpty) {
-            avgRating =
-                ratings.reduce((a, b) => a + b) / ratings.length;
-          }
-        }
+                double avgRating = 0;
+                if (verifiedFarms.isNotEmpty) {
+                  final ratings = verifiedFarms
+                      .map((f) => (f['rating'] as num?)?.toDouble() ?? 0)
+                      .where((r) => r > 0)
+                      .toList();
+                  if (ratings.isNotEmpty) {
+                    avgRating =
+                        ratings.reduce((a, b) => a + b) / ratings.length;
+                  }
+                }
 
-        return Row(
-          children: [
-            _StatCard(
-              value: '${verifiedFarms.length}',
-              label: 'Fermes actives',
-              icon: Icons.storefront_rounded,
-              color: AppColors.primary,
-            ),
-            const SizedBox(width: 12),
-            _StatCard(
-              value: '${products.length}',
-              label: 'Produits dispo.',
-              icon: Icons.agriculture_rounded,
-              color: AppColors.success,
-            ),
-            const SizedBox(width: 12),
-            _StatCard(
-              value: avgRating > 0 ? avgRating.toStringAsFixed(1) : '—',
-              label: 'Note moyenne',
-              icon: Icons.star_rounded,
-              color: AppColors.accent,
-            ),
-          ],
-        );
-      },
-    );
-  },
-),
+                return Row(
+                  children: [
+                    _StatCard(
+                      value: '${verifiedFarms.length}',
+                      label: 'Fermes actives',
+                      icon: Icons.storefront_rounded,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    _StatCard(
+                      value: '${products.length}',
+                      label: 'Produits dispo.',
+                      icon: Icons.agriculture_rounded,
+                      color: AppColors.success,
+                    ),
+                    const SizedBox(width: 12),
+                    _StatCard(
+                      value: avgRating > 0 ? avgRating.toStringAsFixed(1) : '—',
+                      label: 'Note moyenne',
+                      icon: Icons.star_rounded,
+                      color: AppColors.accent,
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
         const SizedBox(height: 24),
 
         Row(children: [
@@ -358,33 +358,33 @@ class _ClientHomeBody extends StatelessWidget {
 
         // Grille produits — 2 colonnes mobile, 3-4 desktop
         Obx(() {
-  final ctrl = Get.find<CatalogueController>();
-  if (ctrl.isLoading.value) {
-    return const Center(
-      child: CircularProgressIndicator(color: AppColors.primary),
-    );
-  }
-  final products = ctrl.products.take(8).toList();
-  if (products.isEmpty) {
-    return Center(
-      child: Text('Aucun produit disponible',
-          style: Theme.of(context).textTheme.bodyMedium),
-    );
-  }
-  return GridView.builder(
-    shrinkWrap: true,
-    physics: const NeverScrollableScrollPhysics(),
-    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: isDesktop ? 4 : 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      mainAxisExtent: 230,
-    ),
-    itemCount: products.length,
-    itemBuilder: (context, index) =>
-        ProductCard(product: products[index]),
-  );
-}),
+          final ctrl = Get.find<CatalogueController>();
+          if (ctrl.isLoading.value) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
+          }
+          final products = ctrl.products.take(8).toList();
+          if (products.isEmpty) {
+            return Center(
+              child: Text('Aucun produit disponible',
+                  style: Theme.of(context).textTheme.bodyMedium),
+            );
+          }
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: isDesktop ? 4 : 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              mainAxisExtent: 230,
+            ),
+            itemCount: products.length,
+            itemBuilder: (context, index) =>
+                ProductCard(product: products[index]),
+          );
+        }),
       ],
     );
   }
@@ -444,7 +444,7 @@ class _StatCard extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
@@ -462,42 +462,45 @@ class _StatCard extends StatelessWidget {
               children: [
                 // Rond décoratif dans le coin
                 Positioned(
-  top: -8,
-  right: -8,
-  child: LayoutBuilder(
-    builder: (context, constraints) {
-      final size = MediaQuery.of(context).size.width < 400 ? 36.0 : 48.0;
-      return Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          shape: BoxShape.circle,
-        ),
-      );
-    },
-  ),
-),
+                  top: -8,
+                  right: -8,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final size =
+                          MediaQuery.of(context).size.width < 400 ? 36.0 : 48.0;
+                      return Container(
+                        width: size,
+                        height: size,
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.08),
+                          shape: BoxShape.circle,
+                        ),
+                      );
+                    },
+                  ),
+                ),
                 // Contenu réel
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Builder(
-  builder: (context) {
-    final isSmall = MediaQuery.of(context).size.width < 400;
-    return Container(
-      width: isSmall ? 28 : 34,
-      height: isSmall ? 28 : 34,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(isSmall ? 8 : 10),
-      ),
-      child: Icon(icon, color: color, size: isSmall ? 14 : 18),
-    );
-  },
-),
-                    const SizedBox(height: 10),
+                      builder: (context) {
+                        final isSmall = MediaQuery.of(context).size.width < 400;
+                        return Container(
+                          width: isSmall ? 28 : 34,
+                          height: isSmall ? 28 : 34,
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.1),
+                            borderRadius:
+                                BorderRadius.circular(isSmall ? 8 : 10),
+                          ),
+                          child:
+                              Icon(icon, color: color, size: isSmall ? 14 : 18),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 6),
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
@@ -512,12 +515,12 @@ class _StatCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     Text(
                       label,
                       style: const TextStyle(
                         fontFamily: 'Poppins',
-                        fontSize: 10.5,
+                        fontSize: 10,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textSecondary,
                       ),
@@ -534,8 +537,6 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
-
-
 
 class _SidebarItem extends StatelessWidget {
   final IconData icon;
@@ -587,7 +588,6 @@ class _SidebarItem extends StatelessWidget {
   }
 }
 
-
 class _NotifButton extends StatelessWidget {
   final Color color;
   const _NotifButton({this.color = Colors.white});
@@ -603,9 +603,8 @@ class _NotifButton extends StatelessWidget {
         final orders = snap.data ?? [];
         // Compte les commandes qui ont changé de statut récemment
         // et nécessitent l'attention du client (livré = à confirmer)
-        final needsAttention = orders
-            .where((o) => o['status'] == 'delivered')
-            .length;
+        final needsAttention =
+            orders.where((o) => o['status'] == 'delivered').length;
 
         return SizedBox(
           width: 48,
@@ -625,8 +624,8 @@ class _NotifButton extends StatelessWidget {
                       backgroundColor: AppColors.primary,
                       colorText: Colors.white,
                       snackPosition: SnackPosition.TOP,
-                      icon: const Icon(Icons.notifications,
-                          color: Colors.white),
+                      icon:
+                          const Icon(Icons.notifications, color: Colors.white),
                       duration: const Duration(seconds: 2),
                     );
                   }

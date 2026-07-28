@@ -14,19 +14,16 @@ class OrderTrackingScreen extends StatefulWidget {
   const OrderTrackingScreen({super.key, required this.orderId});
 
   @override
-  State<OrderTrackingScreen> createState() =>
-      _OrderTrackingScreenState();
+  State<OrderTrackingScreen> createState() => _OrderTrackingScreenState();
 }
 
-class _OrderTrackingScreenState
-    extends State<OrderTrackingScreen> {
+class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   final _firestore = Get.find<FirestoreService>();
 
-  String _formatPrice(double p) =>
-      '${p.toStringAsFixed(0).replaceAllMapped(
-            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-            (m) => '${m[1]} ',
-          )} FCFA';
+  String _formatPrice(double p) => '${p.toStringAsFixed(0).replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]} ',
+      )} FCFA';
 
   // Convertit n'importe quelle valeur en String sans crash
   String _str(dynamic v, [String fallback = '']) {
@@ -59,8 +56,7 @@ class _OrderTrackingScreenState
         body: const Center(
           child: Text('Référence de commande manquante',
               style: TextStyle(
-                  fontFamily: 'Poppins',
-                  color: AppColors.textSecondary)),
+                  fontFamily: 'Poppins', color: AppColors.textSecondary)),
         ),
       );
     }
@@ -82,8 +78,7 @@ class _OrderTrackingScreenState
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(
-                  color: AppColors.primary),
+              child: CircularProgressIndicator(color: AppColors.primary),
             );
           }
 
@@ -101,8 +96,7 @@ class _OrderTrackingScreenState
                           color: AppColors.textSecondary)),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () =>
-                        Get.offAllNamed(AppRoutes.clientHome),
+                    onPressed: () => Get.offAllNamed(AppRoutes.clientHome),
                     child: const Text('Retour à l\'accueil'),
                   ),
                 ],
@@ -112,8 +106,7 @@ class _OrderTrackingScreenState
 
           if (!snap.hasData || snap.data == null) {
             return const Center(
-              child: CircularProgressIndicator(
-                  color: AppColors.primary),
+              child: CircularProgressIndicator(color: AppColors.primary),
             );
           }
 
@@ -131,8 +124,7 @@ class _OrderTrackingScreenState
                           color: AppColors.textSecondary)),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () =>
-                        Get.offAllNamed(AppRoutes.clientHome),
+                    onPressed: () => Get.offAllNamed(AppRoutes.clientHome),
                     child: const Text('Retour à l\'accueil'),
                   ),
                 ],
@@ -146,8 +138,7 @@ class _OrderTrackingScreenState
             return const Center(
               child: Text('Données de commande vides',
                   style: TextStyle(
-                      fontFamily: 'Poppins',
-                      color: AppColors.textSecondary)),
+                      fontFamily: 'Poppins', color: AppColors.textSecondary)),
             );
           }
 
@@ -159,14 +150,12 @@ class _OrderTrackingScreenState
           final farmId = _str(data['farmId']);
           final total = _dbl(data['total']);
           final isDelivery = _bool(data['isDelivery'], true);
-          final productPhotoUrl =
-    data['productPhotoUrl'] as String?;
+          final productPhotoUrl = data['productPhotoUrl'] as String?;
 
           return ResponsiveLayout(
             desktop: Center(
               child: ConstrainedBox(
-                constraints:
-                    const BoxConstraints(maxWidth: 640),
+                constraints: const BoxConstraints(maxWidth: 640),
                 child: _buildContent(
                   context,
                   status: status,
@@ -235,8 +224,7 @@ class _OrderTrackingScreenState
                     letterSpacing: 2)),
             const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
@@ -264,10 +252,10 @@ class _OrderTrackingScreenState
           ),
           child: Row(children: [
             ProductImage(
-  imageUrl: productPhotoUrl,
-  width: 56,
-  height: 56,
-),
+              imageUrl: productPhotoUrl,
+              width: 56,
+              height: 56,
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -296,9 +284,7 @@ class _OrderTrackingScreenState
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      isDelivery
-                          ? 'Livraison à domicile'
-                          : 'Retrait ferme',
+                      isDelivery ? 'Livraison à domicile' : 'Retrait ferme',
                       style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 11,
@@ -382,8 +368,8 @@ class _OrderTrackingScreenState
             decoration: BoxDecoration(
               color: AppColors.success.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                  color: AppColors.success.withValues(alpha: 0.3)),
+              border:
+                  Border.all(color: AppColors.success.withValues(alpha: 0.3)),
             ),
             child: Column(children: [
               const Icon(Icons.inventory_outlined,
@@ -409,19 +395,14 @@ class _OrderTrackingScreenState
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () =>
-                      _confirmReception(farmName),
-                  icon: const Icon(
-                      Icons.check_circle_outline,
-                      size: 18),
+                  onPressed: () => _confirmReception(farmName),
+                  icon: const Icon(Icons.check_circle_outline, size: 18),
                   label: const Text('Confirmer la réception',
                       style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w600)),
+                          fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
@@ -431,16 +412,14 @@ class _OrderTrackingScreenState
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => _showDisputeDialog(context),
+              onPressed: () => _showDisputeDialog(context, farmId),
               icon: const Icon(Icons.report_outlined,
                   size: 16, color: AppColors.error),
               label: const Text('Signaler un problème',
-                  style: TextStyle(
-                      fontFamily: 'Poppins',
-                      color: AppColors.error)),
+                  style:
+                      TextStyle(fontFamily: 'Poppins', color: AppColors.error)),
               style: OutlinedButton.styleFrom(
-                  side:
-                      const BorderSide(color: AppColors.error)),
+                  side: const BorderSide(color: AppColors.error)),
             ),
           ),
         ],
@@ -453,8 +432,8 @@ class _OrderTrackingScreenState
             decoration: BoxDecoration(
               color: AppColors.success.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                  color: AppColors.success.withValues(alpha: 0.3)),
+              border:
+                  Border.all(color: AppColors.success.withValues(alpha: 0.3)),
             ),
             child: Column(children: [
               const Icon(Icons.check_circle,
@@ -477,16 +456,13 @@ class _OrderTrackingScreenState
               ),
               const SizedBox(height: 14),
               ElevatedButton.icon(
-                onPressed: () => _showRatingDialog(
-                    context, farmId, farmName),
+                onPressed: () => _showRatingDialog(context, farmId, farmName),
                 icon: const Icon(Icons.star_outline, size: 18),
                 label: const Text('Noter la ferme',
-                    style:
-                        TextStyle(fontFamily: 'Poppins')),
+                    style: TextStyle(fontFamily: 'Poppins')),
                 style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.accent,
-                    foregroundColor:
-                        const Color(0xFF412402)),
+                    foregroundColor: const Color(0xFF412402)),
               ),
             ]),
           ),
@@ -496,8 +472,7 @@ class _OrderTrackingScreenState
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
-            onPressed: () =>
-                Get.offAllNamed(AppRoutes.clientHome),
+            onPressed: () => Get.offAllNamed(AppRoutes.clientHome),
             child: const Text('Retour à l\'accueil',
                 style: TextStyle(fontFamily: 'Poppins')),
           ),
@@ -508,13 +483,7 @@ class _OrderTrackingScreenState
 
   // ── Helpers ───────────────────────────────────────────────────
   _StepStatusType _stepStatus(String current, String step) {
-    const order = [
-      'pending',
-      'confirmed',
-      'inRoute',
-      'delivered',
-      'completed'
-    ];
+    const order = ['pending', 'confirmed', 'inRoute', 'delivered', 'completed'];
     final ci = order.indexOf(current);
     final si = order.indexOf(step);
     if (ci < 0 || si < 0) return _StepStatusType.pending;
@@ -525,41 +494,43 @@ class _OrderTrackingScreenState
 
   String _statusLabel(String status) {
     switch (status) {
-      case 'pending':    return 'Paiement confirmé';
-      case 'confirmed':  return 'En cours de préparation';
-      case 'inRoute':    return 'En route vers vous';
-      case 'delivered':  return 'Livré — En attente de confirmation';
-      case 'completed':  return 'Commande terminée';
-      case 'disputed':   return 'Litige en cours';
-      default:           return 'En cours';
+      case 'pending':
+        return 'Paiement confirmé';
+      case 'confirmed':
+        return 'En cours de préparation';
+      case 'inRoute':
+        return 'En route vers vous';
+      case 'delivered':
+        return 'Livré — En attente de confirmation';
+      case 'completed':
+        return 'Commande terminée';
+      case 'disputed':
+        return 'Litige en cours';
+      default:
+        return 'En cours';
     }
   }
 
   Future<void> _confirmReception(String farmName) async {
     try {
-      await _firestore.updateOrderStatus(
-          widget.orderId, 'completed');
-      WoilaToast.success(
-          'Merci !', 'Paiement libéré à $farmName.');
+      await _firestore.updateOrderStatus(widget.orderId, 'completed');
+      WoilaToast.success('Merci !', 'Paiement libéré à $farmName.');
     } catch (e) {
       WoilaToast.error('Erreur', 'Impossible de confirmer la réception');
     }
   }
 
-  void _showDisputeDialog(BuildContext context) {
+  void _showDisputeDialog(BuildContext context, String farmId) {
     final descCtrl = TextEditingController();
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Signaler un problème',
-            style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700)),
+            style:
+                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text(
-              'Décrivez le problème rencontré',
+          const Text('Décrivez le problème rencontré',
               style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 13,
@@ -568,8 +539,8 @@ class _OrderTrackingScreenState
           TextFormField(
             controller: descCtrl,
             maxLines: 3,
-            decoration: const InputDecoration(
-                hintText: 'Décrivez le problème...'),
+            decoration:
+                const InputDecoration(hintText: 'Décrivez le problème...'),
           ),
         ]),
         actions: [
@@ -577,12 +548,10 @@ class _OrderTrackingScreenState
             onPressed: () => Navigator.pop(context),
             child: const Text('Annuler',
                 style: TextStyle(
-                    fontFamily: 'Poppins',
-                    color: AppColors.textSecondary)),
+                    fontFamily: 'Poppins', color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
               Navigator.pop(context);
               try {
@@ -590,27 +559,23 @@ class _OrderTrackingScreenState
                   'orderId': widget.orderId,
                   'type': 'autre',
                   'description': descCtrl.text,
-                  'clientId':
-                      Get.find<AuthService>().uid,
-                  'farmId': '',
+                  'clientId': Get.find<AuthService>().uid,
+                  'farmId': farmId,
                 });
-                WoilaToast.warning('Litige ouvert',
-                    'L\'admin a été notifié');
+                WoilaToast.warning('Litige ouvert', 'L\'admin a été notifié');
               } catch (e) {
-                WoilaToast.error(
-                    'Erreur', 'Impossible d\'ouvrir le litige');
+                WoilaToast.error('Erreur', 'Impossible d\'ouvrir le litige');
               }
             },
-            child: const Text('Envoyer',
-                style: TextStyle(fontFamily: 'Poppins')),
+            child:
+                const Text('Envoyer', style: TextStyle(fontFamily: 'Poppins')),
           ),
         ],
       ),
     );
   }
 
-  void _showRatingDialog(
-      BuildContext context, String farmId, String farmName) {
+  void _showRatingDialog(BuildContext context, String farmId, String farmName) {
     int selectedStars = 5;
     final commentCtrl = TextEditingController();
 
@@ -618,8 +583,8 @@ class _OrderTrackingScreenState
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setS) => AlertDialog(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Column(children: [
             const Text('Noter la ferme',
                 style: TextStyle(
@@ -633,16 +598,13 @@ class _OrderTrackingScreenState
                     fontSize: 13,
                     color: AppColors.textSecondary)),
           ]),
-          content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
                 5,
                 (i) => GestureDetector(
-                  onTap: () =>
-                      setS(() => selectedStars = i + 1),
+                  onTap: () => setS(() => selectedStars = i + 1),
                   child: Icon(
                     i < selectedStars
                         ? Icons.star_rounded
@@ -658,8 +620,7 @@ class _OrderTrackingScreenState
               controller: commentCtrl,
               maxLines: 3,
               decoration: const InputDecoration(
-                  hintText:
-                      'Laissez un commentaire (optionnel)...'),
+                  hintText: 'Laissez un commentaire (optionnel)...'),
             ),
           ]),
           actions: [
@@ -667,8 +628,7 @@ class _OrderTrackingScreenState
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Annuler',
                   style: TextStyle(
-                      fontFamily: 'Poppins',
-                      color: AppColors.textSecondary)),
+                      fontFamily: 'Poppins', color: AppColors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -677,8 +637,7 @@ class _OrderTrackingScreenState
                   await _firestore.addRating(
                     farmId: farmId,
                     orderId: widget.orderId,
-                    clientId:
-                        Get.find<AuthService>().uid,
+                    clientId: Get.find<AuthService>().uid,
                     stars: selectedStars,
                     comment: commentCtrl.text,
                   );
@@ -687,8 +646,7 @@ class _OrderTrackingScreenState
                     '$selectedStars étoile${selectedStars > 1 ? 's' : ''} — $farmName',
                   );
                 } catch (e) {
-                  WoilaToast.error('Erreur',
-                      'Impossible d\'envoyer la note');
+                  WoilaToast.error('Erreur', 'Impossible d\'envoyer la note');
                 }
               },
               child: const Text('Envoyer',
@@ -719,35 +677,33 @@ class _TrackingStep extends StatelessWidget {
 
   Color get _color {
     switch (stepStatus) {
-      case _StepStatusType.done:    return AppColors.success;
-      case _StepStatusType.active:  return AppColors.primary;
-      case _StepStatusType.pending: return AppColors.divider;
+      case _StepStatusType.done:
+        return AppColors.success;
+      case _StepStatusType.active:
+        return AppColors.primary;
+      case _StepStatusType.pending:
+        return AppColors.divider;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return IntrinsicHeight(
-      child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Column(children: [
           Container(
             width: 20,
             height: 20,
             decoration: BoxDecoration(
-              color: stepStatus == _StepStatusType.pending
-                  ? Colors.white
-                  : _color,
+              color:
+                  stepStatus == _StepStatusType.pending ? Colors.white : _color,
               shape: BoxShape.circle,
               border: Border.all(color: _color, width: 2),
             ),
             child: stepStatus == _StepStatusType.done
-                ? const Icon(Icons.check,
-                    size: 12, color: Colors.white)
+                ? const Icon(Icons.check, size: 12, color: Colors.white)
                 : stepStatus == _StepStatusType.active
-                    ? const Icon(Icons.circle,
-                        size: 8, color: Colors.white)
+                    ? const Icon(Icons.circle, size: 8, color: Colors.white)
                     : null,
           ),
           if (!isLast)
@@ -757,27 +713,22 @@ class _TrackingStep extends StatelessWidget {
                 color: stepStatus == _StepStatusType.done
                     ? AppColors.success
                     : AppColors.divider,
-                margin:
-                    const EdgeInsets.symmetric(vertical: 3),
+                margin: const EdgeInsets.symmetric(vertical: 3),
               ),
             ),
         ]),
         const SizedBox(width: 14),
         Expanded(
           child: Padding(
-            padding:
-                EdgeInsets.only(bottom: isLast ? 0 : 20),
-            child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                children: [
+            padding: EdgeInsets.only(bottom: isLast ? 0 : 20),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(title,
                   style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: stepStatus ==
-                              _StepStatusType.pending
+                      color: stepStatus == _StepStatusType.pending
                           ? AppColors.textSecondary
                           : AppColors.textPrimary)),
               const SizedBox(height: 2),

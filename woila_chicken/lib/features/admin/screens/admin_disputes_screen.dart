@@ -9,6 +9,81 @@ import '../../../core/widgets/woila_toast.dart';
 class AdminDisputesScreen extends StatelessWidget {
   const AdminDisputesScreen({super.key});
 
+  Future<List<Map<String, dynamic>?>> _loadDisputeParties(
+      Map<String, dynamic> dispute) async {
+    final clientId = dispute['clientId'] as String? ?? '';
+    final farmId = dispute['farmId'] as String? ?? '';
+
+    Map<String, dynamic>? client;
+    Map<String, dynamic>? farm;
+
+    if (clientId.isNotEmpty) {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(clientId)
+          .get();
+      if (doc.exists) client = doc.data();
+    }
+
+    if (farmId.isNotEmpty) {
+      final doc = await FirebaseFirestore.instance
+          .collection('farms')
+          .doc(farmId)
+          .get();
+      if (doc.exists) farm = doc.data();
+    }
+
+    // Si pas de farmId direct, chercher via orderId
+    if (farm == null) {
+      final orderId = dispute['orderId'] as String? ?? '';
+      if (orderId.isNotEmpty) {
+        final orderDoc = await FirebaseFirestore.instance
+            .collection('orders')
+            .doc(orderId)
+            .get();
+        if (orderDoc.exists) {
+          final fid = orderDoc.data()?['farmId'] as String? ?? '';
+          if (fid.isNotEmpty) {
+            final farmDoc = await FirebaseFirestore.instance
+                .collection('farms')
+                .doc(fid)
+                .get();
+            if (farmDoc.exists) farm = farmDoc.data();
+          }
+          // Charger client depuis orderId si pas trouvé
+          if (client == null) {
+            final cid = orderDoc.data()?['clientId'] as String? ?? '';
+            if (cid.isNotEmpty) {
+              final clientDoc = await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(cid)
+                  .get();
+              if (clientDoc.exists) client = clientDoc.data();
+            }
+          }
+        }
+      }
+    }
+
+    String? farmOwnerEmail;
+    final ownerId = farm?['ownerId'] as String? ?? '';
+    if (ownerId.isNotEmpty) {
+      final ownerDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(ownerId)
+          .get();
+      if (ownerDoc.exists) {
+        farmOwnerEmail = ownerDoc.data()?['email'] as String?;
+        // Fusionner dans farm
+        farm = {
+          ...?farm,
+          'email': farmOwnerEmail ?? '',
+        };
+      }
+    }
+    return [client, farm];
+  }
+
   @override
   Widget build(BuildContext context) {
     final firestore = Get.find<FirestoreService>();
@@ -261,20 +336,7 @@ class AdminDisputesScreen extends StatelessWidget {
             style:
                 TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
         content: FutureBuilder<List<Map<String, dynamic>?>>(
-          future: Future.wait([
-            // Charger les infos client
-            FirebaseFirestore.instance
-                .collection('users')
-                .doc(dispute['clientId'] as String? ?? '')
-                .get()
-                .then((d) => d.exists ? d.data() : null),
-            // Charger les infos ferme
-            FirebaseFirestore.instance
-                .collection('farms')
-                .doc(dispute['farmId'] as String? ?? '')
-                .get()
-                .then((d) => d.exists ? d.data() : null),
-          ]),
+          future: _loadDisputeParties(dispute),
           builder: (context, snap) {
             if (!snap.hasData) {
               return const SizedBox(
@@ -284,100 +346,28 @@ class AdminDisputesScreen extends StatelessWidget {
             }
             final client = snap.data?[0];
             final farm = snap.data?[1];
-
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Client
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(10),
+            return SingleChildScrollView(
+              // ← évite l'overflow
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ContactTile(
+                    icon: Icons.person_outline,
+                    title: client?['name'] as String? ?? 'Client inconnu',
+                    phone: client?['phone'] as String? ?? '',
+                    email: client?['email'] as String? ?? '',
+                    role: 'Client',
                   ),
-                  child: Row(children: [
-                    const Icon(Icons.person_outline,
-                        color: AppColors.primary, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            client?['name'] as String? ?? 'Client inconnu',
-                            style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600),
-                          ),
-                          if ((client?['phone'] as String? ?? '').isNotEmpty)
-                            Text(
-                              client!['phone'] as String,
-                              style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 12,
-                                  color: AppColors.primary),
-                            ),
-                          if ((client?['email'] as String? ?? '').isNotEmpty)
-                            Text(
-                              client!['email'] as String,
-                              style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const Text('Client',
-                        style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 11,
-                            color: AppColors.textSecondary)),
-                  ]),
-                ),
-                const SizedBox(height: 10),
-                // Ferme
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(10),
+                  const SizedBox(height: 10),
+                  _ContactTile(
+                    icon: Icons.store_outlined,
+                    title: farm?['name'] as String? ?? 'Ferme inconnue',
+                    phone: farm?['phone'] as String? ?? '',
+                    email: farm?['email'] as String? ?? '',
+                    role: 'Éleveur',
                   ),
-                  child: Row(children: [
-                    const Icon(Icons.store_outlined,
-                        color: AppColors.primary, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            farm?['name'] as String? ?? 'Ferme inconnue',
-                            style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600),
-                          ),
-                          if ((farm?['phone'] as String? ?? '').isNotEmpty)
-                            Text(
-                              farm!['phone'] as String,
-                              style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 12,
-                                  color: AppColors.primary),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const Text('Éleveur',
-                        style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 11,
-                            color: AppColors.textSecondary)),
-                  ]),
-                ),
-              ],
+                ],
+              ),
             );
           },
         ),
@@ -434,5 +424,82 @@ class _DetailRow extends StatelessWidget {
               fontSize: 12,
               color: AppColors.textSecondary)),
     ]);
+  }
+}
+
+class _ContactTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String phone;
+  final String email;
+  final String role;
+
+  const _ContactTile({
+    required this.icon,
+    required this.title,
+    required this.phone,
+    required this.email,
+    required this.role,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary)),
+                if (phone.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(phone,
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          color: AppColors.primary)),
+                ],
+                if (email.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(email,
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          color: AppColors.textSecondary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                ],
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(role,
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 10,
+                    color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -6,7 +6,6 @@ import '../../../core/services/firestore_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/responsive_layout.dart';
-import '../../../core/widgets/woila_toast.dart';
 import 'maintenance_screen.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -35,7 +34,7 @@ class LoginScreen extends StatelessWidget {
                           bottom: 12,
                           right: 16,
                           child: Text(
-                            'version: 1.0.1',
+                            'version: 1.0.2',
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 10,
@@ -245,52 +244,6 @@ class _LoginForm extends StatelessWidget {
     final auth = Get.find<AuthService>();
     final emailCtrl = TextEditingController();
     final passCtrl = TextEditingController();
-
-    void showEmailVerificationDialog(AuthService auth) {
-      showDialog(
-        context: Get.context!,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Vérifiez votre email',
-              style: TextStyle(
-                  fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
-          content: const Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.mark_email_unread_outlined,
-                size: 48, color: AppColors.primary),
-            SizedBox(height: 12),
-            Text(
-              'Un email de vérification a été envoyé à votre adresse. Vérifiez votre boîte mail puis reconnectez-vous.',
-              style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-          ]),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                await auth.currentUser.value?.sendEmailVerification();
-                WoilaToast.info('Email renvoyé', 'Vérifiez votre boîte mail');
-              },
-              child: const Text('Renvoyer',
-                  style: TextStyle(
-                      fontFamily: 'Poppins', color: AppColors.textSecondary)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(Get.context!);
-                auth.logout();
-              },
-              child: const Text('OK, j\'ai compris',
-                  style: TextStyle(fontFamily: 'Poppins')),
-            ),
-          ],
-        ),
-      );
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

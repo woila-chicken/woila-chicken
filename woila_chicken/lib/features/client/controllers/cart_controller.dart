@@ -102,22 +102,23 @@ class CartController extends GetxController {
   bool get isEmpty => items.isEmpty;
 
   // ── Actions ───────────────────────────────────────────────────
-  void addProduct(Product product, {bool wantsDelivery = true}) {
+  void addProduct(Product product,
+      {bool wantsDelivery = true, int quantity = 1}) {
     final idx = items.indexWhere((i) => i.product.id == product.id);
     if (idx >= 0) {
-      items[idx].quantity++;
+      items[idx].quantity += quantity;
       items.refresh();
     } else {
       items.add(CartItem(
         product: product,
-        quantity: 1,
+        quantity: quantity,
         wantsDelivery: wantsDelivery,
       ));
     }
     _saveToStorage();
     WoilaToast.success(
       'Ajouté au panier',
-      '${product.name} — ${product.pricefcfa.toInt()} FCFA',
+      '${product.name} · ×$quantity — ${(product.pricefcfa * quantity).toInt()} FCFA',
     );
   }
 

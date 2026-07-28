@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/models/product.dart';
 import '../../../core/widgets/quantity_stepper.dart';
 import '../../../core/widgets/responsive_layout.dart';
+import '../../../core/widgets/woila_toast.dart';
 import 'checkout_screen.dart';
 import '../controllers/cart_controller.dart';
 
@@ -419,6 +420,7 @@ class _OrderPanelState extends State<_OrderPanel> {
                         Get.find<CartController>().addProduct(
                           widget.product,
                           wantsDelivery: wantsDelivery,
+                          quantity: quantity, 
                         );
                       }
                     : null,
