@@ -317,6 +317,8 @@ class FirestoreService extends GetxService {
       pricefcfa: toDouble(d['priceFcfa']),
       farmName: toStr(d['farmName']),
       farmRating: toDouble(d['farmRating']),
+      productRating: toDouble(d['rating']),
+      totalRatings: (d['totalRatings'] as num?)?.toInt() ?? 0,
       hasSanitaryCert: toBool(d['hasSanitaryCert']),
       deliveryAvailable: toBool(d['deliveryAvailable'], true),
       pickupAvailable: toBool(d['pickupAvailable'], true),

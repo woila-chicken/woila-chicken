@@ -89,6 +89,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'farmName': widget.product.farmName,
         'productId': widget.product.id,
         'productName': '${widget.product.name} ${widget.product.weightKg}kg',
+        'productPhotoUrl': widget.product.imageUrl ?? '',
         'quantity': widget.quantity,
         'priceFcfa': widget.product.pricefcfa,
         'deliveryFee': _deliveryFee,

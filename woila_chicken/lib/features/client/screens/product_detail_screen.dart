@@ -222,7 +222,6 @@ class _ProductRatings extends StatelessWidget {
           .limit(5)
           .snapshots(),
       builder: (context, snap) {
-        // Ignorer silencieusement l'erreur assertion
         if (snap.hasError) return const SizedBox.shrink();
         if (!snap.hasData) return const SizedBox.shrink();
         final docs = snap.data?.docs ?? [];
@@ -445,6 +444,29 @@ class _OrderPanelState extends State<_OrderPanel> {
                 fontFamily: 'Poppins',
                 fontSize: 13,
                 color: AppColors.textSecondary)),
+        const SizedBox(height: 8),
+
+        // Note produit
+        if (widget.product.productRating > 0)
+          Row(children: [
+            ...List.generate(
+                5,
+                (i) => Icon(
+                      i < widget.product.productRating.round()
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      size: 14,
+                      color: AppColors.accent,
+                    )),
+            const SizedBox(width: 6),
+            Text(
+              '${widget.product.productRating.toStringAsFixed(1)} (${widget.product.totalRatings} avis)',
+              style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  color: AppColors.textSecondary),
+            ),
+          ]),
         const SizedBox(height: 16),
 
         // Stock indicator
@@ -832,11 +854,36 @@ class _RateProductButton extends StatelessWidget {
                     'comment': commentCtrl.text.trim(),
                     'createdAt': FieldValue.serverTimestamp(),
                   });
+
+                  // 2. Recalculer la moyenne et mettre à jour le produit
+                  final allRatings = await FirebaseFirestore.instance
+                      .collection('product_ratings')
+                      .where('productId', isEqualTo: product.id)
+                      .get();
+
+                  if (allRatings.docs.isNotEmpty) {
+                    double total = 0;
+                    for (final d in allRatings.docs) {
+                      total += (d.data()['stars'] as num?)?.toDouble() ?? 0;
+                    }
+                    final avg = total / allRatings.docs.length;
+
+                    await FirebaseFirestore.instance
+                        .collection('products')
+                        .doc(product.id)
+                        .update({
+                      'rating': double.parse(avg.toStringAsFixed(1)),
+                      'totalRatings': allRatings.docs.length,
+                    });
+                  }
+
                   WoilaToast.success(
                     'Merci pour votre avis !',
                     '$selectedStars étoile${selectedStars > 1 ? 's' : ''} — ${product.name}',
                   );
-                } catch (_) {
+                } catch (e, stack) {
+                  debugPrint('ERREUR NOTATION: $e');
+                  debugPrint('STACK: $stack');
                   WoilaToast.error('Erreur', 'Impossible d\'envoyer la note');
                 }
               },

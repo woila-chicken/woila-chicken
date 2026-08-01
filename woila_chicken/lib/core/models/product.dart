@@ -12,6 +12,8 @@ class Product {
   final String availability;
   final String? imageUrl;
   final int stockQuantity;
+  final double productRating;
+  final int totalRatings;
 
   const Product({
     required this.id,
@@ -27,5 +29,7 @@ class Product {
     required this.availability,
     this.imageUrl,
     this.stockQuantity = 0,
+    this.productRating = 0,
+    this.totalRatings = 0,
   });
 }
