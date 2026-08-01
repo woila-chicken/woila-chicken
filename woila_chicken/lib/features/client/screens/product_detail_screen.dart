@@ -1,11 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/models/product.dart';
 import '../../../core/widgets/quantity_stepper.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/widgets/woila_toast.dart';
+import '../../../core/services/auth_service.dart';
 import 'checkout_screen.dart';
 import '../controllers/cart_controller.dart';
 
@@ -19,13 +22,114 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _wantsDelivery = true;
+  bool _isFavorite = false;
+  bool _loadingFavorite = true;
+
+  final _auth = Get.find<AuthService>();
 
   @override
   void initState() {
     super.initState();
-    // Si livraison non dispo, retrait par défaut
     if (!widget.product.deliveryAvailable) _wantsDelivery = false;
+    _checkFavorite();
   }
+
+  Future<void> _checkFavorite() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_auth.uid)
+          .collection('favorites')
+          .doc(widget.product.id)
+          .get();
+      if (!mounted) return;
+      setState(() {
+        _isFavorite = doc.exists;
+        _loadingFavorite = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingFavorite = false);
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final ref = FirebaseFirestore.instance
+        .collection('users')
+        .doc(_auth.uid)
+        .collection('favorites')
+        .doc(widget.product.id);
+
+    setState(() => _isFavorite = !_isFavorite);
+
+    try {
+      if (_isFavorite) {
+        await ref.set({
+          'productId': widget.product.id,
+          'name': widget.product.name,
+          'priceFcfa': widget.product.pricefcfa,
+          'farmName': widget.product.farmName,
+          'imageUrl': widget.product.imageUrl ?? '',
+          'addedAt': FieldValue.serverTimestamp(),
+        });
+        WoilaToast.success(
+            'Favori ajouté', '${widget.product.name} dans vos favoris');
+      } else {
+        await ref.delete();
+        WoilaToast.info(
+            'Favori retiré', '${widget.product.name} retiré des favoris');
+      }
+    } catch (_) {
+      // Annuler si erreur
+      if (!mounted) return;
+      setState(() => _isFavorite = !_isFavorite);
+      WoilaToast.error('Erreur', 'Impossible de modifier les favoris');
+    }
+  }
+
+  Future<void> _share() async {
+    final text =
+        '🐓 ${widget.product.name} — ${widget.product.pricefcfa.toInt()} FCFA\n'
+        '📍 ${widget.product.farmName}\n'
+        '⭐ ${widget.product.farmRating}/5\n\n'
+        'Disponible sur Woïla Chicken 🇨🇲';
+
+    // Sur mobile → partage natif
+    final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      // Sur PC → copier dans le presse-papier
+      await Clipboard.setData(ClipboardData(text: text));
+      WoilaToast.info('Copié', 'Infos produit copiées dans le presse-papier');
+    }
+  }
+
+  List<Widget> _appBarActions() => [
+        _loadingFavorite
+            ? const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white)),
+              )
+            : IconButton(
+                icon: Icon(
+                  _isFavorite ? Icons.favorite : Icons.favorite_outline,
+                  color: _isFavorite ? Colors.red : null,
+                ),
+                tooltip:
+                    _isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                onPressed: _toggleFavorite,
+              ),
+        IconButton(
+          icon: const Icon(Icons.share_outlined),
+          tooltip: 'Partager',
+          onPressed: _share,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -35,42 +139,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  // ─── DESKTOP ────────────────────────────────────────────────
   Widget _buildDesktop(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(widget.product.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.favorite_outline),
-            onPressed: () {
-              Get.snackbar(
-                'Ajouté aux favoris',
-                '${widget.product.name} ajouté à vos favoris',
-                backgroundColor: AppColors.primary,
-                colorText: Colors.white,
-                snackPosition: SnackPosition.BOTTOM,
-                icon: const Icon(Icons.favorite, color: Colors.white),
-                duration: const Duration(seconds: 2),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            onPressed: () {
-              Get.snackbar(
-                'Partager',
-                '${widget.product.name} — ${widget.product.pricefcfa} · ${widget.product.farmName}',
-                backgroundColor: AppColors.primary,
-                colorText: Colors.white,
-                snackPosition: SnackPosition.BOTTOM,
-                icon: const Icon(Icons.share, color: Colors.white),
-                duration: const Duration(seconds: 2),
-              );
-            },
-          ),
-        ],
+        actions: _appBarActions(),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -80,25 +154,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Colonne gauche — image + infos ferme
                 Expanded(
                   flex: 5,
-                  child: Column(
-                    children: [
-                      _ProductImage(product: widget.product),
-                      const SizedBox(height: 16),
-                      _FarmCard(product: widget.product),
-                    ],
-                  ),
+                  child: Column(children: [
+                    _ProductImage(product: widget.product),
+                    const SizedBox(height: 16),
+                    _FarmCard(product: widget.product),
+                    const SizedBox(height: 16),
+                    _ProductRatings(productId: widget.product.id),
+                  ]),
                 ),
                 const SizedBox(width: 32),
-                // Colonne droite — détails + commande
                 Expanded(
                   flex: 6,
                   child: SingleChildScrollView(
-                    child: _OrderPanel(
-                      product: widget.product,
-                    ),
+                    child: _OrderPanel(product: widget.product),
                   ),
                 ),
               ],
@@ -109,37 +179,140 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  // ─── MOBILE ─────────────────────────────────────────────────
   Widget _buildMobile(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(widget.product.name),
-        actions: [
-          IconButton(
-              icon: const Icon(Icons.favorite_outline), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.share_outlined), onPressed: () {}),
-        ],
+        actions: _appBarActions(),
       ),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _ProductImage(product: widget.product, height: 220),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _OrderPanel(
-                    product: widget.product,
-                  ),
-                  const SizedBox(height: 16),
-                  _FarmCard(product: widget.product),
-                ],
-              ),
-            ),
-          ],
-        ),
+        child: Column(children: [
+          _ProductImage(product: widget.product, height: 220),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(children: [
+              _OrderPanel(product: widget.product),
+              const SizedBox(height: 16),
+              _FarmCard(product: widget.product),
+              const SizedBox(height: 16),
+              _ProductRatings(productId: widget.product.id),
+            ]),
+          ),
+        ]),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Notes du produit
+// ─────────────────────────────────────────────────────────────────
+class _ProductRatings extends StatelessWidget {
+  final String productId;
+  const _ProductRatings({required this.productId});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('product_ratings')
+          .where('productId', isEqualTo: productId)
+          .orderBy('createdAt', descending: true)
+          .limit(5)
+          .snapshots(),
+      builder: (context, snap) {
+        final docs = snap.data?.docs ?? [];
+        if (docs.isEmpty) return const SizedBox.shrink();
+
+        double avg = 0;
+        for (final d in docs) {
+          avg += (d.data() as Map)['stars'] as int? ?? 0;
+        }
+        avg = avg / docs.length;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.divider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                const Text('Avis clients',
+                    style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary)),
+                const Spacer(),
+                const Icon(Icons.star_rounded,
+                    color: AppColors.accent, size: 16),
+                const SizedBox(width: 4),
+                Text(avg.toStringAsFixed(1),
+                    style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary)),
+                Text(' (${docs.length})',
+                    style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: AppColors.textSecondary)),
+              ]),
+              const SizedBox(height: 12),
+              ...docs.map((d) {
+                final data = d.data() as Map<String, dynamic>;
+                final stars = data['stars'] as int? ?? 0;
+                final comment = data['comment'] as String? ?? '';
+                final name = data['clientName'] as String? ?? 'Client';
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Text(name,
+                            style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary)),
+                        const Spacer(),
+                        Row(
+                          children: List.generate(
+                            5,
+                            (i) => Icon(
+                              i < stars
+                                  ? Icons.star_rounded
+                                  : Icons.star_outline_rounded,
+                              size: 13,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                        ),
+                      ]),
+                      if (comment.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(comment,
+                            style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                color: AppColors.textSecondary)),
+                      ],
+                      if (d != docs.last) const Divider(height: 16),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -163,27 +336,17 @@ class _ProductImage extends StatelessWidget {
             color: AppColors.primary.withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: product.imageUrl != null
+          child: product.imageUrl != null &&
+                  product.imageUrl!.isNotEmpty &&
+                  product.imageUrl!.startsWith('http')
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Image.network(product.imageUrl!,
-                      fit: BoxFit.cover, width: double.infinity),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (_, __, ___) => _placeholder()),
                 )
-              : ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Center(
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      width: 140,
-                      height: 140,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Center(
-                        child: Icon(Icons.set_meal_rounded,
-                            color: AppColors.primary, size: 80),
-                      ),
-                    ),
-                  ),
-                ),
+              : _placeholder(),
         ),
         if (product.hasSanitaryCert)
           Positioned(
@@ -211,6 +374,22 @@ class _ProductImage extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _placeholder() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Center(
+        child: Image.asset(
+          'assets/images/logo.png',
+          width: 140,
+          height: 140,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const Icon(Icons.set_meal_rounded,
+              color: AppColors.primary, size: 80),
+        ),
+      ),
     );
   }
 }
@@ -243,7 +422,6 @@ class _OrderPanelState extends State<_OrderPanel> {
           .doc(widget.product.id)
           .snapshots(),
       builder: (context, snap) {
-        // Stock en temps réel depuis Firestore
         int stockQty = widget.product.stockQuantity;
         if (snap.hasData && snap.data!.exists) {
           final d = snap.data!.data() as Map<String, dynamic>;
@@ -255,7 +433,6 @@ class _OrderPanelState extends State<_OrderPanel> {
 
         final bool canOrder = stockQty > 0 && quantity <= stockQty;
 
-        // Corriger quantity si dépasse le stock
         if (quantity > stockQty && stockQty > 0) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) setState(() => quantity = stockQty);
@@ -265,24 +442,27 @@ class _OrderPanelState extends State<_OrderPanel> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Nom + prix
-            Text(
-              widget.product.name,
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary),
-            ),
+            Text(widget.product.name,
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary)),
             const SizedBox(height: 8),
+            Text(formatPrice(widget.product.pricefcfa),
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary)),
+            const SizedBox(height: 6),
+            // Poids
             Text(
-              formatPrice(widget.product.pricefcfa),
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primary),
-            ),
+                '${widget.product.weightKg.toString().replaceAll('.', ',')} kg',
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    color: AppColors.textSecondary)),
             const SizedBox(height: 16),
 
             // Stock indicator
@@ -296,30 +476,28 @@ class _OrderPanelState extends State<_OrderPanel> {
                         : AppColors.success.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    stockQty == 0
-                        ? Icons.remove_circle_outline
-                        : stockQty <= 3
-                            ? Icons.warning_amber_rounded
-                            : Icons.check_circle_outline,
-                    size: 14,
-                    color: stockQty == 0
-                        ? AppColors.error
-                        : stockQty <= 3
-                            ? AppColors.warning
-                            : AppColors.success,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    stockQty == 0
-                        ? 'Rupture de stock'
-                        : stockQty <= 3
-                            ? 'Plus que $stockQty en stock !'
-                            : '$stockQty disponibles',
-                    style: TextStyle(
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(
+                  stockQty == 0
+                      ? Icons.remove_circle_outline
+                      : stockQty <= 3
+                          ? Icons.warning_amber_rounded
+                          : Icons.check_circle_outline,
+                  size: 14,
+                  color: stockQty == 0
+                      ? AppColors.error
+                      : stockQty <= 3
+                          ? AppColors.warning
+                          : AppColors.success,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  stockQty == 0
+                      ? 'Rupture de stock'
+                      : stockQty <= 3
+                          ? 'Plus que $stockQty en stock !'
+                          : '$stockQty disponibles',
+                  style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -327,15 +505,13 @@ class _OrderPanelState extends State<_OrderPanel> {
                           ? AppColors.error
                           : stockQty <= 3
                               ? AppColors.warning
-                              : AppColors.success,
-                    ),
-                  ),
-                ],
-              ),
+                              : AppColors.success),
+                ),
+              ]),
             ),
             const SizedBox(height: 16),
 
-            // Sélecteur quantité
+            // Quantité
             if (stockQty > 0) ...[
               const Text('Quantité',
                   style: TextStyle(
@@ -345,30 +521,22 @@ class _OrderPanelState extends State<_OrderPanel> {
                       color: AppColors.textPrimary)),
               const SizedBox(height: 8),
               Row(children: [
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.divider),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: SizedBox(
-                    width: 180,
-                    child: QuantityStepper(
-                      value: quantity,
-                      onChanged: (v) {
-                        if (v <= stockQty) setState(() => quantity = v);
-                      },
-                      max: stockQty,
-                    ),
+                SizedBox(
+                  width: 180,
+                  child: QuantityStepper(
+                    value: quantity,
+                    onChanged: (v) {
+                      if (v <= stockQty) setState(() => quantity = v);
+                    },
+                    max: stockQty,
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Max : $stockQty',
-                  style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      color: AppColors.textSecondary),
-                ),
+                Text('Max : $stockQty',
+                    style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: AppColors.textSecondary)),
               ]),
               const SizedBox(height: 16),
             ],
@@ -411,7 +579,7 @@ class _OrderPanelState extends State<_OrderPanel> {
               const SizedBox(height: 20),
             ],
 
-            // Bouton ajouter au panier
+            // Ajouter au panier
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -420,7 +588,7 @@ class _OrderPanelState extends State<_OrderPanel> {
                         Get.find<CartController>().addProduct(
                           widget.product,
                           wantsDelivery: wantsDelivery,
-                          quantity: quantity, 
+                          quantity: quantity,
                         );
                       }
                     : null,
@@ -431,7 +599,7 @@ class _OrderPanelState extends State<_OrderPanel> {
             ),
             const SizedBox(height: 10),
 
-            // Bouton commander
+            // Commander
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -446,9 +614,7 @@ class _OrderPanelState extends State<_OrderPanel> {
                         )
                     : null,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  // Grisé automatiquement quand onPressed est null
-                ),
+                    padding: const EdgeInsets.symmetric(vertical: 14)),
                 child: Text(
                   stockQty == 0
                       ? 'Rupture de stock'
@@ -460,6 +626,10 @@ class _OrderPanelState extends State<_OrderPanel> {
                 ),
               ),
             ),
+
+            // Note du produit
+            const SizedBox(height: 20),
+            _RateProductButton(product: widget.product),
           ],
         );
       },
@@ -467,6 +637,230 @@ class _OrderPanelState extends State<_OrderPanel> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────
+//  Bouton noter le produit
+// ─────────────────────────────────────────────────────────────────
+class _RateProductButton extends StatelessWidget {
+  final Product product;
+  const _RateProductButton({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = Get.find<AuthService>();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('orders')
+          .where('clientId', isEqualTo: auth.uid)
+          .where('productId', isEqualTo: product.id)
+          .where('status', isEqualTo: 'completed')
+          .limit(1)
+          .snapshots(),
+      builder: (context, snap) {
+        // Afficher uniquement si le client a commandé et reçu ce produit
+        if (!snap.hasData || snap.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance
+              .collection('product_ratings')
+              .doc('${auth.uid}_${product.id}')
+              .get(),
+          builder: (context, ratingSnap) {
+            final alreadyRated = ratingSnap.hasData && ratingSnap.data!.exists;
+
+            if (alreadyRated) {
+              final stars =
+                  (ratingSnap.data!.data() as Map?)?['stars'] as int? ?? 0;
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+                ),
+                child: Row(children: [
+                  const Icon(Icons.star_rounded,
+                      color: AppColors.accent, size: 18),
+                  const SizedBox(width: 8),
+                  Text('Vous avez noté ce produit : $stars/5',
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          color: AppColors.textSecondary)),
+                ]),
+              );
+            }
+
+            return OutlinedButton.icon(
+              onPressed: () => _showRatingDialog(context, auth.uid),
+              icon: const Icon(Icons.star_outline_rounded, size: 18),
+              label: const Text('Noter ce produit',
+                  style: TextStyle(fontFamily: 'Poppins')),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.accent,
+                side: BorderSide(color: AppColors.accent.withValues(alpha: 0.5)),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showRatingDialog(BuildContext context, String clientId) {
+    int selectedStars = 5;
+    final commentCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Column(children: [
+            const Text('Noter ce produit',
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16)),
+            const SizedBox(height: 4),
+            Text(product.name,
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    color: AppColors.textSecondary)),
+          ]),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                5,
+                (i) => GestureDetector(
+                  onTap: () => setS(() => selectedStars = i + 1),
+                  child: Icon(
+                    i < selectedStars
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    color: AppColors.accent,
+                    size: 36,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: commentCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                  hintText: 'Votre avis sur ce produit (optionnel)...'),
+            ),
+          ]),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler',
+                  style: TextStyle(
+                      fontFamily: 'Poppins', color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                try {
+                  final auth = Get.find<AuthService>();
+                  // ID unique : uid_productId pour éviter les doublons
+                  await FirebaseFirestore.instance
+                      .collection('product_ratings')
+                      .doc('${clientId}_${product.id}')
+                      .set({
+                    'productId': product.id,
+                    'clientId': clientId,
+                    'clientName':
+                        auth.currentUser.value?.displayName ?? 'Client',
+                    'stars': selectedStars,
+                    'comment': commentCtrl.text.trim(),
+                    'createdAt': FieldValue.serverTimestamp(),
+                  });
+                  WoilaToast.success(
+                    'Merci pour votre avis !',
+                    '$selectedStars étoile${selectedStars > 1 ? 's' : ''} — ${product.name}',
+                  );
+                } catch (_) {
+                  WoilaToast.error('Erreur', 'Impossible d\'envoyer la note');
+                }
+              },
+              child: const Text('Envoyer',
+                  style: TextStyle(fontFamily: 'Poppins')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Carte ferme
+// ─────────────────────────────────────────────────────────────────
+class _FarmCard extends StatelessWidget {
+  final Product product;
+  const _FarmCard({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: const BoxDecoration(
+              color: AppColors.accent, shape: BoxShape.circle),
+          child: const Center(
+            child: Icon(Icons.agriculture_rounded,
+                size: 22, color: Color(0xFF412402)),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(product.farmName,
+                  style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary)),
+              const SizedBox(height: 2),
+              Row(children: [
+                const Icon(Icons.star, size: 14, color: AppColors.accent),
+                const SizedBox(width: 3),
+                Text(
+                  '${product.farmRating} · Ferme partenaire',
+                  style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      color: AppColors.textSecondary),
+                ),
+              ]),
+            ],
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  Widgets utilitaires conservés
+// ─────────────────────────────────────────────────────────────────
 class _ModeBtn extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -490,9 +884,8 @@ class _ModeBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.06)
-              : Colors.white,
+          color:
+              isSelected ? AppColors.primary.withValues(alpha: 0.06) : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.divider,
@@ -517,249 +910,6 @@ class _ModeBtn extends StatelessWidget {
                   fontSize: 10,
                   color: AppColors.textSecondary)),
         ]),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────
-//  Carte ferme
-// ─────────────────────────────────────────────────────────────────
-class _FarmCard extends StatelessWidget {
-  final Product product;
-  const _FarmCard({required this.product});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-                color: AppColors.accent, shape: BoxShape.circle),
-            child: const Center(
-              child: Icon(Icons.agriculture_rounded,
-                  size: 22, color: Color(0xFF412402)),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.farmName,
-                  style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    const Icon(Icons.star, size: 14, color: AppColors.accent),
-                    const SizedBox(width: 3),
-                    Text(
-                      '${product.farmRating} · Ferme vérifiée',
-                      style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12,
-                          color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Get.snackbar(
-                product.farmName,
-                'Profil de la ferme — disponible après connexion Firebase',
-                backgroundColor: AppColors.accent,
-                colorText: const Color(0xFF412402),
-                snackPosition: SnackPosition.BOTTOM,
-                icon: const Icon(Icons.store, color: Color(0xFF412402)),
-              );
-            },
-            child: const Text('Voir la ferme',
-                style: TextStyle(
-                    color: AppColors.primary,
-                    fontFamily: 'Poppins',
-                    fontSize: 12)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Widgets utilitaires ──────────────────────────────────────────
-
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: AppColors.textSecondary),
-          const SizedBox(width: 10),
-          Text(label,
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  color: AppColors.textSecondary)),
-          const Spacer(),
-          Text(value,
-              style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: valueColor ?? AppColors.textPrimary)),
-        ],
-      ),
-    );
-  }
-}
-
-class _LogisticOption extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String sublabel;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _LogisticOption({
-    required this.icon,
-    required this.label,
-    required this.sublabel,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.06)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.divider,
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                size: 24),
-            const SizedBox(height: 6),
-            Text(label,
-                style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color:
-                        isSelected ? AppColors.primary : AppColors.textPrimary),
-                textAlign: TextAlign.center),
-            Text(sublabel,
-                style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11,
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.textSecondary),
-                textAlign: TextAlign.center),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QuantityButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-  const _QuantityButton({required this.icon, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: onTap != null
-              ? AppColors.primary.withValues(alpha: 0.08)
-              : AppColors.divider,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-              color: onTap != null
-                  ? AppColors.primary.withValues(alpha: 0.3)
-                  : AppColors.divider),
-        ),
-        child: Icon(icon,
-            size: 18,
-            color: onTap != null ? AppColors.primary : AppColors.textSecondary),
-      ),
-    );
-  }
-}
-
-class _PriceRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _PriceRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  color: AppColors.textSecondary)),
-          Text(value,
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary)),
-        ],
       ),
     );
   }

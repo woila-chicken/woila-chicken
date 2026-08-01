@@ -1140,29 +1140,3 @@ class _Label extends StatelessWidget {
   }
 }
 
-class _DialogField extends StatelessWidget {
-  final TextEditingController ctrl;
-  final String label;
-  final String hint;
-  final TextInputType? keyboardType;
-
-  const _DialogField({
-    required this.ctrl,
-    required this.label,
-    required this.hint,
-    this.keyboardType,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _Label(label),
-      const SizedBox(height: 6),
-      TextFormField(
-        controller: ctrl,
-        keyboardType: keyboardType,
-        decoration: InputDecoration(hintText: hint),
-      ),
-    ]);
-  }
-}

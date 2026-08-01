@@ -5,6 +5,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/services/firestore_service.dart';
 import '../../../core/widgets/woila_toast.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 
 class AdminDisputesScreen extends StatelessWidget {
   const AdminDisputesScreen({super.key});
@@ -443,63 +445,114 @@ class _ContactTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary)),
-                if (phone.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(phone,
-                      style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12,
-                          color: AppColors.primary)),
-                ],
-                if (email.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(email,
-                      style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 11,
-                          color: AppColors.textSecondary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                ],
+Widget build(BuildContext context) {
+  return Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: AppColors.background,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: AppColors.primary, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary)),
+              if (phone.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => _launchPhone(context, phone),
+                  child: Row(children: [
+                    const Icon(Icons.phone_outlined,
+                        size: 13, color: AppColors.success),
+                    const SizedBox(width: 4),
+                    Text(phone,
+                        style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            color: AppColors.success,
+                            decoration:
+                                TextDecoration.underline)),
+                  ]),
+                ),
               ],
-            ),
+              if (email.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => _launchEmail(context, email),
+                  child: Row(children: [
+                    const Icon(Icons.email_outlined,
+                        size: 13, color: AppColors.primary),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(email,
+                          style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              color: AppColors.primary,
+                              decoration: TextDecoration
+                                  .underline),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                  ]),
+                ),
+              ],
+            ],
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(role,
-                style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 10,
-                    color: AppColors.primary)),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(6),
           ),
-        ],
-      ),
-    );
+          child: Text(role,
+              style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 10,
+                  color: AppColors.primary)),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> _launchPhone(
+    BuildContext context, String phone) async {
+  final clean = phone.replaceAll(' ', '');
+  final uri = Uri.parse('tel:$clean');
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri);
+  } else {
+    // PC — copier dans le presse-papier
+    await Clipboard.setData(ClipboardData(text: phone));
+    if (context.mounted) {
+      WoilaToast.info('Copié', '$phone copié dans le presse-papier');
+    }
   }
+}
+
+Future<void> _launchEmail(
+    BuildContext context, String email) async {
+  final uri = Uri.parse('mailto:$email');
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri);
+  } else {
+    await Clipboard.setData(ClipboardData(text: email));
+    if (context.mounted) {
+      WoilaToast.info('Copié', '$email copié dans le presse-papier');
+    }
+  }
+}
 }

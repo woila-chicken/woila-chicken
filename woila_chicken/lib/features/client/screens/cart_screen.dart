@@ -580,21 +580,4 @@ class _ModeChip extends StatelessWidget {
   }
 }
 
-class _QtyBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _QtyBtn({required this.icon, required this.onTap});
 
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: SizedBox(
-        width: 36,
-        height: 36,
-        child: Icon(icon, size: 18, color: AppColors.primary),
-      ),
-    );
-  }
-}

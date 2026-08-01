@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/models/product.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/woila_toast.dart';
 
 class CartItem {
@@ -54,7 +55,11 @@ class CartItem {
 }
 
 class CartController extends GetxController {
-  static const _key = 'woila_cart';
+  String get _key {
+    final uid = Get.find<AuthService>().uid;
+    return 'woila_cart_$uid';
+  }
+
   final items = <CartItem>[].obs;
 
   @override

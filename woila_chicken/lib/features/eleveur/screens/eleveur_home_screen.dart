@@ -329,7 +329,7 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
       int active = 0;
       int pending = 0;
       for (final d in docs) {
-        final o = d.data() as Map<String, dynamic>;
+        final o = d.data();
         final status = o['status'] as String? ?? '';
         if (['pending', 'confirmed', 'inRoute'].contains(status)) active++;
         if (status == 'pending') pending++;
@@ -399,30 +399,6 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
                   .where('farmId', isEqualTo: _farmId)
                   .snapshots(),
               builder: (context, orderSnap) {
-                final productCount = productSnap.data?.docs.length ?? 0;
-                final orders = orderSnap.data?.docs ?? [];
-
-                final activeOrders = orders
-                    .where((d) => ['pending', 'confirmed', 'inRoute']
-                        .contains((d.data() as Map)['status']))
-                    .length;
-
-                final now = DateTime.now();
-                double revenue = 0;
-                for (final d in orders) {
-                  final o = d.data() as Map<String, dynamic>;
-                  if (o['status'] != 'completed') continue;
-                  try {
-                    final dt = (o['createdAt'] as Timestamp).toDate();
-                    if (dt.month == now.month && dt.year == now.year) {
-                      revenue += (o['total'] as num?)?.toDouble() ?? 0;
-                    }
-                  } catch (_) {}
-                }
-
-                final pendingCount = orders
-                    .where((d) => (d.data() as Map)['status'] == 'pending')
-                    .length;
 
                 return Column(children: [
                   GridView.count(
