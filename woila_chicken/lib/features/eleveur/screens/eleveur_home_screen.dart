@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -12,6 +11,7 @@ import '../../../core/widgets/kpi_card.dart';
 import 'stock_screen.dart';
 import 'eleveur_orders_screen.dart';
 import 'farm_profile_screen.dart';
+import '../../../core/widgets/sidebar_item.dart';
 
 class EleveurHomeScreen extends StatefulWidget {
   const EleveurHomeScreen({super.key});
@@ -38,6 +38,7 @@ class _EleveurHomeScreenState extends State<EleveurHomeScreen> {
   }
 }
 
+
 // ─────────────────────────────────────────────────────────────────
 //  Layout Desktop
 // ─────────────────────────────────────────────────────────────────
@@ -45,14 +46,29 @@ class _DesktopEleveurLayout extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onNavTap;
 
-  const _DesktopEleveurLayout(
-      {required this.selectedIndex, required this.onNavTap});
+  _DesktopEleveurLayout({required this.selectedIndex, required this.onNavTap});
 
-  static const _navItems = [
-    {'icon': Icons.dashboard_outlined, 'label': 'Tableau de bord'},
-    {'icon': Icons.inventory_2_outlined, 'label': 'Mon stock'},
-    {'icon': Icons.list_alt_outlined, 'label': 'Commandes'},
-    {'icon': Icons.store_outlined, 'label': 'Ma ferme'},
+  final _navItems = [
+    {
+      'icon': Icons.dashboard_outlined,
+      'activeIcon': Icons.dashboard,
+      'label': 'Tableau de bord',
+    },
+    {
+      'icon': Icons.inventory_2_outlined,
+      'activeIcon': Icons.inventory_2,
+      'label': 'Mon stock',
+    },
+    {
+      'icon': Icons.receipt_long_outlined,
+      'activeIcon': Icons.receipt_long,
+      'label': 'Commandes',
+    },
+    {
+      'icon': Icons.store_outlined,
+      'activeIcon': Icons.store,
+      'label': 'Ma ferme',
+    },
   ];
 
   @override
@@ -92,8 +108,10 @@ class _DesktopEleveurLayout extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 for (int i = 0; i < _navItems.length; i++) ...[
-                  _EleveurSidebarItem(
+                  SidebarItem(
                     icon: _navItems[i]['icon'] as IconData,
+                    activeIcon: _navItems[i]['activeIcon'] as IconData? ??
+                        _navItems[i]['icon'] as IconData,
                     label: _navItems[i]['label'] as String,
                     isSelected: selectedIndex == i,
                     onTap: () {
@@ -116,18 +134,16 @@ class _DesktopEleveurLayout extends StatelessWidget {
                 const Spacer(),
                 const Divider(height: 1),
                 const Spacer(),
-                const Divider(color: Colors.white24, height: 1),
-                ListTile(
-                  leading: const Icon(Icons.logout_outlined,
-                      color: Colors.white70, size: 20),
-                  title: const Text('Déconnexion',
-                      style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 13,
-                          color: Colors.white70)),
+                const Divider(height: 1),
+                SidebarItem(
+                  icon: Icons.logout_outlined,
+                  activeIcon: Icons.logout,
+                  label: 'Déconnexion',
+                  isSelected: false,
+                  color: AppColors.error,
                   onTap: () => confirmLogout(context, Get.find<AuthService>()),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -180,27 +196,6 @@ class _MobileEleveurLayout extends StatelessWidget {
                 icon: const Icon(Icons.notifications_outlined),
                 onPressed: () => Get.to(() => const EleveurOrdersScreen()),
               ),
-              //     if (pending > 0)
-              // Positioned(
-              //   right: 6,
-              //   top: 6,
-              //   child: Container(
-              //     width: 14,
-              //     height: 14,
-              //     decoration: const BoxDecoration(
-              //         color: AppColors.error, shape: BoxShape.circle),
-              //     child: Center(
-              //       child: Text(
-              //         pending > 9 ? '9+' : '$pending',
-              //         style: const TextStyle(
-              //             fontFamily: 'Poppins',
-              //             fontSize: 8,
-              //             fontWeight: FontWeight.w700,
-              //             color: Colors.white),
-              //       ),
-              //     ),
-              //   ),
-              // ),
             ],
           ),
         ],
@@ -399,7 +394,6 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
                   .where('farmId', isEqualTo: _farmId)
                   .snapshots(),
               builder: (context, orderSnap) {
-
                 return Column(children: [
                   GridView.count(
                     shrinkWrap: true,
@@ -750,52 +744,6 @@ class _EleveurTopBar extends StatelessWidget {
             },
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _EleveurSidebarItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final Color? color;
-
-  const _EleveurSidebarItem({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final itemColor = color ??
-        (isSelected ? const Color(0xFF854F0B) : AppColors.textSecondary);
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.accent.withValues(alpha: 0.15) : null,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: itemColor, size: 20),
-            const SizedBox(width: 12),
-            Text(label,
-                style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 13,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
-                    color: itemColor)),
-          ],
-        ),
       ),
     );
   }

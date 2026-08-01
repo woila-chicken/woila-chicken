@@ -748,9 +748,9 @@ class _RateProductButton extends StatelessWidget {
           return Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.08),
+              color: AppColors.accent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+              border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
             ),
             child: Row(children: [
               const Icon(Icons.star_rounded, color: AppColors.accent, size: 18),
@@ -773,7 +773,7 @@ class _RateProductButton extends StatelessWidget {
               style: TextStyle(fontFamily: 'Poppins')),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.accent,
-            side: BorderSide(color: AppColors.accent.withOpacity(0.5)),
+            side: BorderSide(color: AppColors.accent.withValues(alpha: 0.5)),
           ),
         );
       },
@@ -872,7 +872,7 @@ class _RateProductButton extends StatelessWidget {
                         .collection('products')
                         .doc(product.id)
                         .update({
-                      'rating': double.parse(avg.toStringAsFixed(1)),
+                      'productRating': double.parse(avg.toStringAsFixed(1)),
                       'totalRatings': allRatings.docs.length,
                     });
                   }

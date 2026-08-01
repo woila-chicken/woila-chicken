@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/models/product.dart';
+import '../../eleveur/screens/eleveur_home_screen.dart';
 import '../controllers/cart_controller.dart';
 import '../controllers/catalogue_controller.dart';
 import '../../../core/services/auth_service.dart';
@@ -13,6 +14,7 @@ import 'cart_screen.dart';
 import 'orders_screen.dart';
 import 'profile_screen.dart';
 import '../../../core/widgets/product_card.dart';
+import '../../../core/widgets/sidebar_item.dart';
 
 class ClientHomeScreen extends StatefulWidget {
   const ClientHomeScreen({super.key});
@@ -104,28 +106,28 @@ class _DesktopClientLayout extends StatelessWidget {
                 ),
                 const Divider(height: 1),
                 const SizedBox(height: 8),
-                _SidebarItem(
+                SidebarItem(
                   icon: Icons.home_outlined,
                   activeIcon: Icons.home,
                   label: 'Accueil',
                   isSelected: selectedIndex == 0,
                   onTap: () => onNavTap(0),
                 ),
-                _SidebarItem(
+                SidebarItem(
                   icon: Icons.search_outlined,
                   activeIcon: Icons.search,
                   label: 'Catalogue',
                   isSelected: selectedIndex == 1,
                   onTap: () => Get.toNamed(AppRoutes.catalogue),
                 ),
-                _SidebarItem(
+                SidebarItem(
                   icon: Icons.receipt_long_outlined,
                   activeIcon: Icons.receipt_long,
                   label: 'Mes commandes',
                   isSelected: selectedIndex == 2,
                   onTap: () => Get.to(() => const OrdersScreen()),
                 ),
-                _SidebarItem(
+                SidebarItem(
                   icon: Icons.person_outline,
                   activeIcon: Icons.person,
                   label: 'Mon profil',
@@ -134,12 +136,12 @@ class _DesktopClientLayout extends StatelessWidget {
                 ),
                 const Spacer(),
                 const Divider(height: 1),
-                _SidebarItem(
+                SidebarItem(
                   icon: Icons.logout_outlined,
                   activeIcon: Icons.logout,
                   label: 'Déconnexion',
                   isSelected: false,
-                  onTap: () => Get.offAllNamed('/'),
+                  onTap: () => confirmLogout(context, Get.find<AuthService>()),
                   color: AppColors.error,
                 ),
                 const SizedBox(height: 12),
@@ -532,56 +534,6 @@ class _StatCard extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SidebarItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final Color? color;
-
-  const _SidebarItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final itemColor =
-        color ?? (isSelected ? AppColors.primary : AppColors.textSecondary);
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.08) : null,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Icon(isSelected ? activeIcon : icon, color: itemColor, size: 20),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: itemColor,
-              ),
-            ),
-          ],
         ),
       ),
     );
