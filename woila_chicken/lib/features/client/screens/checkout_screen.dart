@@ -67,22 +67,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final auth = Get.find<AuthService>();
       final firestore = Get.find<FirestoreService>();
 
-      debugPrint('uid: ${auth.uid}');
-      debugPrint('product.farmId: ${widget.product.farmId}');
-      debugPrint('product.id: ${widget.product.id}');
-      debugPrint('total: $_total');
-
-      if (auth.uid.isEmpty) {
-        WoilaToast.error('Erreur', 'Vous devez être connecté');
-        setState(() => _isProcessing = false);
-        return;
+      // Charger le vrai nom depuis Firestore
+      String clientName = _nameCtrl.text.trim();
+      if (clientName.isEmpty) {
+        try {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(auth.uid)
+              .get();
+          clientName = userDoc.data()?['name'] as String? ?? 'Client';
+        } catch (_) {
+          clientName = 'Client';
+        }
       }
 
       final orderId = await firestore.createOrder({
         'clientId': auth.uid,
-        'productPhotoUrl': widget.product.imageUrl ?? '',
-        'clientName':
-            _nameCtrl.text.trim().isEmpty ? 'Client' : _nameCtrl.text.trim(),
+        'clientName': clientName,
         'clientPhone': _phoneCtrl.text.trim(),
         'farmId': widget.product.farmId,
         'farmName': widget.product.farmName,

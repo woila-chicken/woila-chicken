@@ -680,6 +680,18 @@ class _RateProductButton extends StatelessWidget {
     }
   }
 
+  Future<String> _getClientName(String clientId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(clientId)
+          .get();
+      return doc.data()?['name'] as String? ?? 'Client';
+    } catch (_) {
+      return 'Client';
+    }
+  }
+
   Future<int?> _existingRating(String clientId) async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -805,16 +817,17 @@ class _RateProductButton extends StatelessWidget {
               onPressed: () async {
                 Navigator.pop(ctx);
                 try {
-                  final auth = Get.find<AuthService>();
+                  Get.find<AuthService>();
                   // ID unique : uid_productId pour éviter les doublons
+                  Get.find<AuthService>();
+                  final clientName = await _getClientName(clientId);
                   await FirebaseFirestore.instance
                       .collection('product_ratings')
                       .doc('${clientId}_${product.id}')
                       .set({
                     'productId': product.id,
                     'clientId': clientId,
-                    'clientName':
-                        auth.currentUser.value?.displayName ?? 'Client',
+                    'clientName': clientName,
                     'stars': selectedStars,
                     'comment': commentCtrl.text.trim(),
                     'createdAt': FieldValue.serverTimestamp(),

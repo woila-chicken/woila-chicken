@@ -359,6 +359,7 @@ class AdminDisputesScreen extends StatelessWidget {
                     phone: client?['phone'] as String? ?? '',
                     email: client?['email'] as String? ?? '',
                     role: 'Client',
+                    dispute: dispute,
                   ),
                   const SizedBox(height: 10),
                   _ContactTile(
@@ -367,6 +368,7 @@ class AdminDisputesScreen extends StatelessWidget {
                     phone: farm?['phone'] as String? ?? '',
                     email: farm?['email'] as String? ?? '',
                     role: 'Éleveur',
+                    dispute: dispute,
                   ),
                 ],
               ),
@@ -435,6 +437,8 @@ class _ContactTile extends StatelessWidget {
   final String phone;
   final String email;
   final String role;
+  final Map<String, dynamic> dispute;
+  
 
   const _ContactTile({
     required this.icon,
@@ -442,117 +446,153 @@ class _ContactTile extends StatelessWidget {
     required this.phone,
     required this.email,
     required this.role,
+    required this.dispute,
   });
 
   @override
-Widget build(BuildContext context) {
-  return Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: AppColors.background,
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: AppColors.primary, size: 20),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title,
-                  style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary)),
-              if (phone.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: () => _launchPhone(context, phone),
-                  child: Row(children: [
-                    const Icon(Icons.phone_outlined,
-                        size: 13, color: AppColors.success),
-                    const SizedBox(width: 4),
-                    Text(phone,
-                        style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 12,
-                            color: AppColors.success,
-                            decoration:
-                                TextDecoration.underline)),
-                  ]),
-                ),
-              ],
-              if (email.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: () => _launchEmail(context, email),
-                  child: Row(children: [
-                    const Icon(Icons.email_outlined,
-                        size: 13, color: AppColors.primary),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(email,
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary)),
+                if (phone.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () => _launchPhone(context, phone),
+                    child: Row(children: [
+                      const Icon(Icons.phone_outlined,
+                          size: 13, color: AppColors.success),
+                      const SizedBox(width: 4),
+                      Text(phone,
                           style: const TextStyle(
                               fontFamily: 'Poppins',
-                              fontSize: 11,
-                              color: AppColors.primary,
-                              decoration: TextDecoration
-                                  .underline),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
-                    ),
-                  ]),
-                ),
+                              fontSize: 12,
+                              color: AppColors.success,
+                              decoration: TextDecoration.underline)),
+                    ]),
+                  ),
+                ],
+                if (email.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () => _launchEmail(context, email, role, dispute),
+                    child: Row(children: [
+                      const Icon(Icons.email_outlined,
+                          size: 13, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(email,
+                            style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                color: AppColors.primary,
+                                decoration: TextDecoration.underline),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                    ]),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(role,
+                style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 10,
+                    color: AppColors.primary)),
           ),
-          child: Text(role,
-              style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 10,
-                  color: AppColors.primary)),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
-Future<void> _launchPhone(
-    BuildContext context, String phone) async {
-  final clean = phone.replaceAll(' ', '');
-  final uri = Uri.parse('tel:$clean');
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri);
-  } else {
-    // PC — copier dans le presse-papier
-    await Clipboard.setData(ClipboardData(text: phone));
-    if (context.mounted) {
-      WoilaToast.info('Copié', '$phone copié dans le presse-papier');
+  Future<void> _launchPhone(BuildContext context, String phone) async {
+    final clean = phone.replaceAll(' ', '');
+    final uri = Uri.parse('tel:$clean');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      // PC — copier dans le presse-papier
+      await Clipboard.setData(ClipboardData(text: phone));
+      if (context.mounted) {
+        WoilaToast.info('Copié', '$phone copié dans le presse-papier');
+      }
     }
   }
-}
 
-Future<void> _launchEmail(
-    BuildContext context, String email) async {
-  final uri = Uri.parse('mailto:$email');
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri);
-  } else {
-    await Clipboard.setData(ClipboardData(text: email));
-    if (context.mounted) {
-      WoilaToast.info('Copié', '$email copié dans le presse-papier');
+  Future<void> _launchEmail(BuildContext context, String email, String role,
+      Map<String, dynamic> dispute) async {
+    final orderRef = dispute['orderId'] as String? ?? '';
+
+    String subject;
+    String body;
+
+    if (role == 'Client') {
+      subject = 'Woïla Chicken — Votre litige #$orderRef';
+      body = '''Bonjour,
+
+Nous avons bien reçu votre signalement concernant la commande #$orderRef.
+
+Notre équipe a examiné votre dossier et revient vers vous dans les plus brefs délais.
+
+Si vous avez des informations supplémentaires à nous communiquer, n'hésitez pas à répondre à cet email.
+
+Cordialement,
+L'équipe Woïla Chicken
+woila.chicken.cm@gmail.com''';
+    } else {
+      subject = 'Woïla Chicken — Litige signalé #$orderRef';
+      body = '''Bonjour,
+
+Un litige a été signalé concernant une commande passée sur votre ferme (réf: #$orderRef).
+
+Notre équipe examine actuellement la situation et vous contactera pour trouver une résolution.
+
+Merci de bien vouloir conserver toutes les informations relatives à cette commande.
+
+Cordialement,
+L'équipe Woïla Chicken
+woila.chicken.cm@gmail.com''';
+    }
+
+    final uri = Uri(
+      scheme: 'mailto',
+      path: email,
+      query: 'subject=${Uri.encodeComponent(subject)}'
+          '&body=${Uri.encodeComponent(body)}',
+    );
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      await Clipboard.setData(ClipboardData(text: '$subject\n\n$body'));
+      if (context.mounted) {
+        WoilaToast.info('Copié', 'Email copié dans le presse-papier');
+      }
     }
   }
-}
 }

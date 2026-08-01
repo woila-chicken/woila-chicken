@@ -138,6 +138,13 @@ class AuthService extends GetxService {
             .update({'fcmToken': token});
       }
 
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final name = userDoc.data()?['name'] as String? ?? '';
+      if (name.isNotEmpty && _auth.currentUser?.displayName != name) {
+        await _auth.currentUser?.updateDisplayName(name);
+      }
+
       return true;
     } on FirebaseAuthException catch (e) {
       errorMessage.value = _authError(e.code);
