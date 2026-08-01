@@ -38,7 +38,6 @@ class _EleveurHomeScreenState extends State<EleveurHomeScreen> {
   }
 }
 
-
 // ─────────────────────────────────────────────────────────────────
 //  Layout Desktop
 // ─────────────────────────────────────────────────────────────────
@@ -131,8 +130,6 @@ class _DesktopEleveurLayout extends StatelessWidget {
                     },
                   ),
                 ],
-                const Spacer(),
-                const Divider(height: 1),
                 const Spacer(),
                 const Divider(height: 1),
                 SidebarItem(
