@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/models/product.dart';
@@ -259,7 +260,14 @@ class _AddressSection extends StatelessWidget {
           label: 'Téléphone',
           hint: '+237 6XX XXX XXX',
           keyboardType: TextInputType.phone,
-          validator: (v) => v!.isEmpty ? 'Requis' : null,
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'Numéro requis';
+            final digits = v.replaceAll(RegExp(r'[^\d]'), '');
+            if (digits.length < 11) {
+              return 'Numéro incomplet (ex: +237 6XX XXX XXX)';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 12),
         Row(children: [
@@ -342,7 +350,10 @@ class _PaymentSection extends StatelessWidget {
             keyboardType: TextInputType.phone,
             validator: (v) {
               if (v == null || v.isEmpty) return 'Numéro requis';
-              if (v.length < 9) return 'Numéro invalide';
+              final digits = v.replaceAll(RegExp(r'[^\d]'), '');
+              if (digits.length < 11) {
+                return 'Numéro incomplet (ex: +237 6XX XXX XXX)';
+              }
               return null;
             },
           ),
@@ -668,6 +679,7 @@ class _CheckoutField extends StatelessWidget {
   final TextEditingController? controller;
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
+  final List<TextInputFormatter>? inputFormatters;
   final int maxLines;
 
   const _CheckoutField({
@@ -677,6 +689,7 @@ class _CheckoutField extends StatelessWidget {
     this.keyboardType,
     this.validator,
     this.maxLines = 1,
+    this.inputFormatters,
   });
 
   @override
@@ -696,6 +709,7 @@ class _CheckoutField extends StatelessWidget {
           keyboardType: keyboardType,
           validator: validator,
           maxLines: maxLines,
+          inputFormatters: inputFormatters,
           decoration: InputDecoration(hintText: hint),
         ),
       ],

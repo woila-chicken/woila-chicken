@@ -348,12 +348,6 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                     ? 'Commande remise au client'
                     : 'Commande retirée à la ferme',
                 stepStatus: _stepStatus(status, 'delivered'),
-                isLast: false,
-              ),
-              _TrackingStep(
-                title: 'Réception confirmée',
-                subtitle: 'Paiement libéré à l\'éleveur',
-                stepStatus: _stepStatus(status, 'completed'),
                 isLast: true,
               ),
             ],
@@ -421,6 +415,75 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.error)),
             ),
+          ),
+        ],
+
+        if (status == 'disputed') ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.error.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+            ),
+            child: const Column(children: [
+              Icon(Icons.cancel_outlined, color: AppColors.error, size: 40),
+              SizedBox(height: 10),
+              Text('Commande non acceptée',
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.error)),
+              SizedBox(height: 8),
+              Text(
+                'L\'éleveur n\'a pas pu honorer votre commande. '
+                'Votre paiement sera remboursé sous 24-48h. '
+                'Contactez-nous à woila.chicken.cm@gmail.com pour toute question.',
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    height: 1.5),
+                textAlign: TextAlign.center,
+              ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        if (status == 'refunded') ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+            ),
+            child: const Column(children: [
+              Icon(Icons.account_balance_wallet_outlined,
+                  color: AppColors.primary, size: 40),
+              SizedBox(height: 10),
+              Text('Remboursement en cours',
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary)),
+              SizedBox(height: 8),
+              Text(
+                'Suite au litige, votre remboursement a été validé par notre équipe. '
+                'Les fonds seront restitués sous 24-48h sur votre compte Mobile Money.',
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    height: 1.5),
+                textAlign: TextAlign.center,
+              ),
+            ]),
           ),
         ],
 
@@ -506,6 +569,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         return 'Commande terminée';
       case 'disputed':
         return 'Litige en cours';
+      case 'refunded':
+        return 'Remboursé';
+      case 'resolved':
+        return 'Litige résolu';
       default:
         return 'En cours';
     }

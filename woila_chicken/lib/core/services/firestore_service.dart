@@ -214,7 +214,9 @@ class FirestoreService extends GetxService {
     double totalCommission = 0;
     for (final doc in orders.docs) {
       final data = doc.data();
-      if (data['paymentStatus'] == 'released') {
+      // Toutes commissions libérées (released) ou terminées
+      if (data['paymentStatus'] == 'released' ||
+          data['status'] == 'completed') {
         totalCommission += (data['commission'] as num?)?.toDouble() ?? 0;
       }
     }
@@ -226,6 +228,47 @@ class FirestoreService extends GetxService {
       'pendingFarms': pending.docs.length,
       'totalCommission': totalCommission,
     };
+  }
+
+  Stream<Map<String, dynamic>> getAdminStatsStream() {
+    return _db.collection('orders').snapshots().asyncMap((ordersSnap) async {
+      final orders = ordersSnap.docs;
+
+      double totalCommission = 0;
+      for (final doc in orders) {
+        final data = doc.data();
+        if (data['paymentStatus'] == 'released' ||
+            data['status'] == 'completed') {
+          totalCommission += (data['commission'] as num?)?.toDouble() ?? 0;
+        }
+      }
+
+      final farms = await _db
+          .collection('farms')
+          .where('isVerified', isEqualTo: true)
+          .count()
+          .get();
+
+      final disputes = await _db
+          .collection('disputes')
+          .where('status', isEqualTo: 'open')
+          .count()
+          .get();
+
+      final pending = await _db
+          .collection('farms')
+          .where('isVerified', isEqualTo: false)
+          .where('isSuspended', isEqualTo: false)
+          .count()
+          .get();
+
+      return {
+        'totalCommission': totalCommission,
+        'activeFarms': farms.count ?? 0,
+        'openDisputes': disputes.count ?? 0,
+        'pendingFarms': pending.count ?? 0,
+      };
+    });
   }
 
   // ── PARAMÈTRES ────────────────────────────────────────────────

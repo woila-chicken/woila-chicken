@@ -172,23 +172,34 @@ class StockScreen extends StatelessWidget {
                         Icon(
                           isLow
                               ? Icons.warning_amber_rounded
-                              : Icons.inventory_2_outlined,
+                              : quantity == 0
+                                  ? Icons.remove_circle_outline
+                                  : Icons.inventory_2_outlined,
                           size: 13,
                           color: isLow
                               ? AppColors.warning
-                              : AppColors.textSecondary,
+                              : quantity == 0
+                                  ? AppColors.error
+                                  : AppColors.textSecondary,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Stock : $quantity${isLow ? ' — Faible' : ''}',
+                          quantity == 0
+                              ? 'Rupture de stock'
+                              : isLow
+                                  ? '$quantity unité${quantity > 1 ? 's' : ''} — Stock faible !'
+                                  : '$quantity unité${quantity > 1 ? 's' : ''} en stock',
                           style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 12,
-                              color: isLow
-                                  ? AppColors.warning
-                                  : AppColors.textSecondary,
-                              fontWeight:
-                                  isLow ? FontWeight.w600 : FontWeight.normal),
+                              color: quantity == 0
+                                  ? AppColors.error
+                                  : isLow
+                                      ? AppColors.warning
+                                      : AppColors.textSecondary,
+                              fontWeight: isLow || quantity == 0
+                                  ? FontWeight.w600
+                                  : FontWeight.normal),
                         ),
                       ]),
                     ]),
@@ -1139,4 +1150,3 @@ class _Label extends StatelessWidget {
             color: AppColors.textSecondary));
   }
 }
-

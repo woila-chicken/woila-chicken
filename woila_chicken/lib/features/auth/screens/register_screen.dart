@@ -313,7 +313,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
             hint: '+237 6XX XXX XXX',
             icon: Icons.phone_outlined,
             keyboard: TextInputType.phone,
-            validator: (v) => v!.isEmpty ? 'Téléphone requis' : null,
+            validator: (v) {
+              final digits = v?.replaceAll(RegExp(r'[^\d]'), '') ?? '';
+              if (digits.length < 11) {
+                return 'Numéro incomplet (ex: +237 6XX XXX XXX)';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 14),
           _Field(
@@ -565,8 +571,9 @@ class _RoleChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
-          color:
-              isSelected ? AppColors.primary.withValues(alpha: 0.08) : Colors.white,
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.08)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.divider,

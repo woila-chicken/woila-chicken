@@ -274,24 +274,34 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
     _loadFarm();
   }
 
-  Future<void> _loadFarm() async {
-    try {
-      final farm = await _firestore.getFarmByOwner(_auth.uid);
-      if (!mounted) return;
-      setState(() {
-        _farmId = farm?['id'] as String?;
-        _farmName = farm?['name'] as String? ?? '';
-        _rating = (farm?['rating'] as num?)?.toDouble() ?? 0;
-        _isLoading = false;
-      });
-      if (_farmId != null) {
-        _listenProducts();
-        _listenOrders();
+  void _loadFarm() {
+    _firestore.getFarmByOwner(_auth.uid).then((farm) {
+      if (farm == null) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        return;
       }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-    }
+
+      _farmId = farm['id'] as String?;
+      _farmName = farm['name'] as String? ?? '';
+
+      // Écouter les changements de la ferme en temps réel
+      FirebaseFirestore.instance
+          .collection('farms')
+          .doc(_farmId)
+          .snapshots()
+          .listen((snap) {
+        if (!mounted || !snap.exists) return;
+        final data = snap.data()!;
+        setState(() {
+          _rating = (data['rating'] as num?)?.toDouble() ?? 0;
+          _isLoading = false;
+        });
+      });
+
+      _listenProducts();
+      _listenOrders();
+    });
   }
 
   void _listenProducts() {
