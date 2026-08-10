@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firestore_service.dart';
 import '../../../core/theme/app_theme.dart';
@@ -260,6 +261,7 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
   String? _farmId;
   String _farmName = '';
   bool _isLoading = true;
+  final bool _isSuspended = false;
   int _productCount = 0;
   int _activeOrders = 0;
   int _pendingCount = 0;
@@ -275,6 +277,7 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
   }
 
   void _loadFarm() {
+    bool _isSuspended = false;
     _firestore.getFarmByOwner(_auth.uid).then((farm) {
       if (farm == null) {
         if (!mounted) return;
@@ -295,6 +298,7 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
         final data = snap.data()!;
         setState(() {
           _rating = (data['rating'] as num?)?.toDouble() ?? 0;
+          _isSuspended = data['isSuspended'] as bool? ?? false;
           _isLoading = false;
         });
       });
@@ -381,6 +385,56 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Bande suspension
+        if (_isSuspended)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: AppColors.error,
+            child: Row(children: [
+              const Icon(Icons.block_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Votre compte est suspendu. Vos produits ne sont plus visibles. '
+                  'Contactez l\'admin : woila.chicken.cm@gmail.com',
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      color: Colors.white,
+                      height: 1.4),
+                ),
+              ),
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: () async {
+                  final uri = Uri.parse('mailto:woila.chicken.cm@gmail.com'
+                      '?subject=Suspension%20de%20compte%20-%20$_farmName'
+                      '&body=Bonjour%2C%0A%0AJe%20souhaite%20contester%20la%20suspension%20de%20ma%20ferme%20%22$_farmName%22.%0A%0ACordialement');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri);
+                  }
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Contacter',
+                    style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.error),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+
         Text(_farmName, style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 4),
         Text('Voici un aperçu de votre activité',

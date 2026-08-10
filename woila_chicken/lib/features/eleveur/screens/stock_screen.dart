@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/quantity_stepper.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/widgets/suspension_banner.dart';
 import '../../../core/widgets/woila_toast.dart';
 import '../controllers/stock_controller.dart';
 
@@ -34,20 +35,27 @@ class StockScreen extends StatelessWidget {
               style: TextStyle(fontFamily: 'Poppins', color: Colors.white)),
         );
       }),
-      body: ResponsiveLayout(
-        desktop: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: _buildList(context, ctrl),
+      body: Column(
+        children: [
+          const SuspensionBanner(),
+          Expanded(
+            child: ResponsiveLayout(
+              desktop: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 900),
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: _buildList(context, ctrl),
+                  ),
+                ),
+              ),
+              mobile: Padding(
+                padding: const EdgeInsets.all(16),
+                child: _buildList(context, ctrl),
+              ),
             ),
           ),
-        ),
-        mobile: Padding(
-          padding: const EdgeInsets.all(16),
-          child: _buildList(context, ctrl),
-        ),
+        ],
       ),
     );
   }

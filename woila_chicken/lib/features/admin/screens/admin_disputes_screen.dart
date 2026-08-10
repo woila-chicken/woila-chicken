@@ -11,119 +11,111 @@ import 'package:flutter/services.dart';
 class AdminDisputesScreen extends StatelessWidget {
   const AdminDisputesScreen({super.key});
 
-  void _showResolveDialog(
-    BuildContext context, Map<String, dynamic> dispute) {
-  showDialog(
-    context: context,
-    builder: (_) => AlertDialog(
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16)),
-      title: const Text('Résoudre le litige',
+  void _showResolveDialog(BuildContext context, Map<String, dynamic> dispute) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Résoudre le litige',
+            style:
+                TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+        content: const Text(
+          'En faveur de qui souhaitez-vous résoudre ce litige ?',
           style: TextStyle(
               fontFamily: 'Poppins',
-              fontWeight: FontWeight.w700)),
-      content: const Text(
-        'En faveur de qui souhaitez-vous résoudre ce litige ?',
-        style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 13,
-            color: AppColors.textSecondary),
+              fontSize: 13,
+              color: AppColors.textSecondary),
+        ),
+        actions: [
+          // Annuler
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler',
+                style: TextStyle(
+                    fontFamily: 'Poppins', color: AppColors.textSecondary)),
+          ),
+          // En faveur du client — remboursement
+          OutlinedButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _resolveDispute(
+                dispute: dispute,
+                favorClient: true,
+              );
+            },
+            icon: const Icon(Icons.person_outline,
+                size: 16, color: AppColors.primary),
+            label: const Text('Rembourser client',
+                style:
+                    TextStyle(fontFamily: 'Poppins', color: AppColors.primary)),
+            style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.primary)),
+          ),
+          // En faveur de l'éleveur — livraison validée
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _resolveDispute(
+                dispute: dispute,
+                favorClient: false,
+              );
+            },
+            icon: const Icon(Icons.store_outlined, size: 16),
+            label: const Text('Valider livraison',
+                style: TextStyle(fontFamily: 'Poppins')),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
+          ),
+        ],
       ),
-      actions: [
-        // Annuler
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler',
-              style: TextStyle(
-                  fontFamily: 'Poppins',
-                  color: AppColors.textSecondary)),
-        ),
-        // En faveur du client — remboursement
-        OutlinedButton.icon(
-          onPressed: () async {
-            Navigator.pop(context);
-            await _resolveDispute(
-              dispute: dispute,
-              favorClient: true,
-            );
-          },
-          icon: const Icon(Icons.person_outline,
-              size: 16, color: AppColors.primary),
-          label: const Text('Rembourser client',
-              style: TextStyle(
-                  fontFamily: 'Poppins',
-                  color: AppColors.primary)),
-          style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.primary)),
-        ),
-        // En faveur de l'éleveur — livraison validée
-        ElevatedButton.icon(
-          onPressed: () async {
-            Navigator.pop(context);
-            await _resolveDispute(
-              dispute: dispute,
-              favorClient: false,
-            );
-          },
-          icon: const Icon(Icons.store_outlined, size: 16),
-          label: const Text('Valider livraison',
-              style: TextStyle(fontFamily: 'Poppins')),
-          style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.success),
-        ),
-      ],
-    ),
-  );
-}
-
-Future<void> _resolveDispute({
-  required Map<String, dynamic> dispute,
-  required bool favorClient,
-}) async {
-  try {
-    final firestore = Get.find<FirestoreService>();
-    final orderId = dispute['orderId'] as String? ?? '';
-
-    // 1. Marquer le litige résolu
-    await firestore.resolveDispute(dispute['id']);
-
-    // 2. Mettre à jour la commande selon la décision
-    if (orderId.isNotEmpty) {
-      if (favorClient) {
-        // Client remboursé
-        await FirebaseFirestore.instance
-            .collection('orders')
-            .doc(orderId)
-            .update({
-          'status': 'refunded',
-          'paymentStatus': 'refunded',
-          'resolvedAt': FieldValue.serverTimestamp(),
-          'resolvedFor': 'client',
-        });
-      } else {
-        // Éleveur payé
-        await FirebaseFirestore.instance
-            .collection('orders')
-            .doc(orderId)
-            .update({
-          'status': 'completed',
-          'paymentStatus': 'released',
-          'resolvedAt': FieldValue.serverTimestamp(),
-          'resolvedFor': 'eleveur',
-        });
-      }
-    }
-
-    WoilaToast.success(
-      'Litige résolu',
-      favorClient
-          ? 'Remboursement client décidé'
-          : 'Paiement éleveur libéré',
     );
-  } catch (e) {
-    WoilaToast.error('Erreur', 'Impossible de résoudre le litige');
   }
-}
+
+  Future<void> _resolveDispute({
+    required Map<String, dynamic> dispute,
+    required bool favorClient,
+  }) async {
+    try {
+      final firestore = Get.find<FirestoreService>();
+      final orderId = dispute['orderId'] as String? ?? '';
+
+      // 1. Marquer le litige résolu
+      await firestore.resolveDispute(dispute['id']);
+
+      // 2. Mettre à jour la commande selon la décision
+      if (orderId.isNotEmpty) {
+        if (favorClient) {
+          // Client remboursé
+          await FirebaseFirestore.instance
+              .collection('orders')
+              .doc(orderId)
+              .update({
+            'status': 'refunded',
+            'paymentStatus': 'refunded',
+            'resolvedAt': FieldValue.serverTimestamp(),
+            'resolvedFor': 'client',
+          });
+        } else {
+          // Éleveur payé
+          await FirebaseFirestore.instance
+              .collection('orders')
+              .doc(orderId)
+              .update({
+            'status': 'completed',
+            'paymentStatus': 'released',
+            'resolvedAt': FieldValue.serverTimestamp(),
+            'resolvedFor': 'eleveur',
+          });
+        }
+      }
+
+      WoilaToast.success(
+        'Litige résolu',
+        favorClient ? 'Remboursement client décidé' : 'Paiement éleveur libéré',
+      );
+    } catch (e) {
+      WoilaToast.error('Erreur', 'Impossible de résoudre le litige');
+    }
+  }
 
   Future<List<Map<String, dynamic>?>> _loadDisputeParties(
       Map<String, dynamic> dispute) async {
@@ -393,13 +385,14 @@ Future<void> _resolveDispute({
                 Row(children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _showResolveDialog(context, d),
+                      onPressed: () => _showResolveDialog(Get.context!, d),
                       icon: const Icon(Icons.check_circle_outline, size: 16),
                       label: const Text('Résoudre',
                           style:
                               TextStyle(fontFamily: 'Poppins', fontSize: 12)),
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 16, 56, 18)),
+                          backgroundColor:
+                              const Color.fromARGB(255, 16, 56, 18)),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -546,7 +539,6 @@ class _ContactTile extends StatelessWidget {
   final String email;
   final String role;
   final Map<String, dynamic> dispute;
-  
 
   const _ContactTile({
     required this.icon,

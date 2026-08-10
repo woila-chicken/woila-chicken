@@ -515,14 +515,15 @@ class _AdminDashboardBody extends StatelessWidget {
       children: [
         // ── KPIs réels ───────────────────────────────────────────
         StreamBuilder<Map<String, dynamic>>(
-  stream: firestore.getAdminStatsStream(),
-  builder: (context, snap) {
-    final stats = snap.data ?? {
-      'totalCommission': 0.0,
-      'activeFarms': 0,
-      'openDisputes': 0,
-      'pendingFarms': 0,
-    };
+          stream: firestore.getAdminStatsStream(),
+          builder: (context, snap) {
+            final stats = snap.data ??
+                {
+                  'totalCommission': 0.0,
+                  'activeFarms': 0,
+                  'openDisputes': 0,
+                  'pendingFarms': 0,
+                };
             return GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),

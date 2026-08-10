@@ -51,8 +51,16 @@ class _SplashScreenState extends State<SplashScreen>
       Get.offAllNamed(AppRoutes.adminHome);
       break;
     case UserRole.eleveur:
-      Get.offAllNamed(AppRoutes.eleveurHome);
-      break;
+  // Vérifier si la ferme est suspendue
+  final farm = await firestore.getFarmByOwner(auth.uid);
+  if (farm != null &&
+    (farm['isSuspended'] as bool? ?? false)) {
+    // Laisser passer — la bande s'affiche dans l'app
+    Get.offAllNamed(AppRoutes.eleveurHome);
+  } else {
+    Get.offAllNamed(AppRoutes.eleveurHome);
+  }
+  break;
     case UserRole.client:
     default:
       Get.offAllNamed(AppRoutes.clientHome);

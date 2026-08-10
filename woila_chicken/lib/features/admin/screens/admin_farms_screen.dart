@@ -12,66 +12,63 @@ class AdminFarmsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final firestore = Get.find<FirestoreService>();
     return StreamBuilder<List<Map<String, dynamic>>>(
-        stream: firestore.getAllFarms(),
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            );
-          }
-          final farms = snap.data ?? [];
-          final pendingCount = farms
-              .where((f) =>
-                  f['isVerified'] == false &&
-                  f['isSuspended'] == false)
-              .length;
-
-          return Scaffold(
-            backgroundColor: AppColors.background,
-            appBar: AppBar(
-              title: const Text('Fermes partenaires'),
-              backgroundColor: AppColors.adminColor,
-              automaticallyImplyLeading: true,
-              actions: [
-                if (pendingCount > 0)
-                  Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text('$pendingCount en attente',
-                        style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white)),
-                  ),
-              ],
-            ),
-            body: ResponsiveLayout(
-              desktop: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 900),
-                  child: _buildList(context, farms, firestore),
-                ),
-              ),
-              mobile: _buildList(context, farms, firestore),
-            ),
+      stream: firestore.getAllFarms(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
           );
-        },
+        }
+        final farms = snap.data ?? [];
+        final pendingCount = farms
+            .where((f) => f['isVerified'] == false && f['isSuspended'] == false)
+            .length;
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: const Text('Fermes partenaires'),
+            backgroundColor: AppColors.adminColor,
+            automaticallyImplyLeading: true,
+            actions: [
+              if (pendingCount > 0)
+                Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text('$pendingCount en attente',
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white)),
+                ),
+            ],
+          ),
+          body: ResponsiveLayout(
+            desktop: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 900),
+                child: _buildList(context, farms, firestore),
+              ),
+            ),
+            mobile: _buildList(context, farms, firestore),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildList(BuildContext context,
-      List<Map<String, dynamic>> farms, FirestoreService firestore) {
+  Widget _buildList(BuildContext context, List<Map<String, dynamic>> farms,
+      FirestoreService firestore) {
     if (farms.isEmpty) {
       return const Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.store_outlined,
-              size: 64, color: AppColors.textSecondary),
+          Icon(Icons.store_outlined, size: 64, color: AppColors.textSecondary),
           SizedBox(height: 12),
           Text('Aucune ferme inscrite',
               style: TextStyle(
@@ -148,8 +145,8 @@ class AdminFarmsScreen extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: _statusColor(isVerified, isSuspended)
                         .withValues(alpha: 0.1),
@@ -193,12 +190,12 @@ class AdminFarmsScreen extends StatelessWidget {
                       onPressed: () async {
                         await firestore.verifyFarm(farm['id']);
                         WoilaToast.success('Ferme vérifiée',
-    '${farm['name']} a reçu le badge Vérifié');
+                            '${farm['name']} a reçu le badge Vérifié');
                       },
                       icon: const Icon(Icons.verified_outlined, size: 16),
                       label: const Text('Accorder le badge',
-                          style: TextStyle(
-                              fontFamily: 'Poppins', fontSize: 12)),
+                          style:
+                              TextStyle(fontFamily: 'Poppins', fontSize: 12)),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -206,15 +203,15 @@ class AdminFarmsScreen extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: () async {
                         await firestore.suspendFarm(farm['id']);
-                        WoilaToast.error('Ferme refusée', '${farm['name']} a été refusée');
+                        WoilaToast.error(
+                            'Ferme refusée', '${farm['name']} a été refusée');
                       },
                       style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.error,
-                          side: const BorderSide(
-                              color: AppColors.error)),
+                          side: const BorderSide(color: AppColors.error)),
                       child: const Text('Refuser',
-                          style: TextStyle(
-                              fontFamily: 'Poppins', fontSize: 12)),
+                          style:
+                              TextStyle(fontFamily: 'Poppins', fontSize: 12)),
                     ),
                   ),
                 ],
@@ -222,7 +219,8 @@ class AdminFarmsScreen extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: () async {
                       await firestore.suspendFarm(farm['id']);
-                      WoilaToast.error('Ferme suspendue', '${farm['name']} a été suspendue');
+                      WoilaToast.error(
+                          'Ferme suspendue', '${farm['name']} a été suspendue');
                     },
                     icon: const Icon(Icons.block_outlined,
                         size: 16, color: AppColors.error),
@@ -232,19 +230,18 @@ class AdminFarmsScreen extends StatelessWidget {
                             fontSize: 12,
                             color: AppColors.error)),
                     style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                            color: AppColors.error)),
+                        side: const BorderSide(color: AppColors.error)),
                   ),
                 if (isSuspended)
                   ElevatedButton.icon(
                     onPressed: () async {
                       await firestore.verifyFarm(farm['id']);
-                      WoilaToast.success('Ferme réactivée', '${farm['name']} a été réactivée');
+                      WoilaToast.success(
+                          'Ferme réactivée', '${farm['name']} a été réactivée');
                     },
                     icon: const Icon(Icons.refresh_rounded, size: 16),
                     label: const Text('Réactiver',
-                        style: TextStyle(
-                            fontFamily: 'Poppins', fontSize: 12)),
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 12)),
                     style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.success),
                   ),

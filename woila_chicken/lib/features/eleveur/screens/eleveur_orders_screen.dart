@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/widgets/product_image.dart';
+import '../../../core/widgets/suspension_banner.dart';
 import '../../../core/widgets/woila_toast.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firestore_service.dart';
@@ -145,15 +146,22 @@ class _EleveurOrdersScreenState extends State<EleveurOrdersScreen> {
                         fontFamily: 'Poppins', color: AppColors.textSecondary),
                   ),
                 )
-              : ResponsiveLayout(
-                  desktop: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 800),
-                      child: _buildList(),
-                    ),
+              : Column(
+                children: [
+                  const SuspensionBanner(),
+                  Expanded(
+                    child: ResponsiveLayout(
+                        desktop: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 800),
+                            child: _buildList(),
+                          ),
+                        ),
+                        mobile: _buildList(),
+                      ),
                   ),
-                  mobile: _buildList(),
-                ),
+                ],
+              ),
     );
   }
 
@@ -342,6 +350,42 @@ class _OrderCard extends StatelessWidget {
                           color: AppColors.textSecondary),
                     ),
                   ]),
+// Infos livraison si applicable
+                  if (isDelivery) ...[
+                    const SizedBox(height: 4),
+                    if ((order['address'] as String? ?? '').isNotEmpty)
+                      Row(children: [
+                        const Icon(Icons.location_on_outlined,
+                            size: 13, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            order['address'] as String,
+                            style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.primary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ]),
+                    const SizedBox(height: 2),
+                    if ((order['clientPhone'] as String? ?? '').isNotEmpty)
+                      Row(children: [
+                        const Icon(Icons.phone_outlined,
+                            size: 13, color: AppColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Text(
+                          order['clientPhone'] as String,
+                          style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              color: AppColors.textSecondary),
+                        ),
+                      ]),
+                  ],
                 ],
               ),
             ),
