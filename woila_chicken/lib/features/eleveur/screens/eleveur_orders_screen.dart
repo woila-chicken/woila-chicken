@@ -147,10 +147,10 @@ class _EleveurOrdersScreenState extends State<EleveurOrdersScreen> {
                   ),
                 )
               : Column(
-                children: [
-                  const SuspensionBanner(),
-                  Expanded(
-                    child: ResponsiveLayout(
+                  children: [
+                    const SuspensionBanner(),
+                    Expanded(
+                      child: ResponsiveLayout(
                         desktop: Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 800),
@@ -159,9 +159,9 @@ class _EleveurOrdersScreenState extends State<EleveurOrdersScreen> {
                         ),
                         mobile: _buildList(),
                       ),
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
     );
   }
 
@@ -350,7 +350,7 @@ class _OrderCard extends StatelessWidget {
                           color: AppColors.textSecondary),
                     ),
                   ]),
-// Infos livraison si applicable
+                  // Infos livraison si applicable
                   if (isDelivery) ...[
                     const SizedBox(height: 4),
                     if ((order['address'] as String? ?? '').isNotEmpty)

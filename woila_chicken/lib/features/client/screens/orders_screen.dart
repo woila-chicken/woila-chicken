@@ -22,60 +22,67 @@ class _OrdersScreenState extends State<OrdersScreen> {
   final _auth = Get.find<AuthService>();
   final _firestore = Get.find<FirestoreService>();
 
-  String _formatPrice(double p) =>
-      '${p.toStringAsFixed(0).replaceAllMapped(
-            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-            (m) => '${m[1]} ',
-          )} FCFA';
+  String _formatPrice(double p) => '${p.toStringAsFixed(0).replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]} ',
+      )} FCFA';
 
-  List<Map<String, dynamic>> _applyFilter(
-      List<Map<String, dynamic>> orders) {
+  List<Map<String, dynamic>> _applyFilter(List<Map<String, dynamic>> orders) {
     switch (_filter) {
       case OrderFilter.toutes:
         return orders;
       case OrderFilter.enCours:
         return orders
-            .where((o) => ['pending', 'confirmed', 'inRoute']
-                .contains(o['status']))
+            .where((o) =>
+                ['pending', 'confirmed', 'inRoute'].contains(o['status']))
             .toList();
       case OrderFilter.livrees:
-        return orders
-            .where((o) => o['status'] == 'delivered')
-            .toList();
+        return orders.where((o) => o['status'] == 'delivered').toList();
       case OrderFilter.terminees:
-        return orders
-            .where((o) => o['status'] == 'completed')
-            .toList();
+        return orders.where((o) => o['status'] == 'completed').toList();
     }
   }
 
   String _statusLabel(String status) {
     switch (status) {
-      case 'pending':   return 'En attente';
-      case 'confirmed': return 'Confirmée';
-      case 'inRoute':   return 'En route';
-      case 'delivered': return 'Livré';
-      case 'completed': return 'Terminée';
-      case 'disputed':  return 'Litige';
-      default:          return status;
+      case 'pending':
+        return 'En attente';
+      case 'confirmed':
+        return 'Confirmée';
+      case 'inRoute':
+        return 'En route';
+      case 'delivered':
+        return 'Livré';
+      case 'completed':
+        return 'Terminée';
+      case 'disputed':
+        return 'Litige';
+      default:
+        return status;
     }
   }
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'pending':   return AppColors.warning;
-      case 'confirmed': return AppColors.primary;
-      case 'inRoute':   return Colors.blue;
-      case 'delivered': return AppColors.success;
-      case 'completed': return AppColors.textSecondary;
-      case 'disputed':  return AppColors.error;
-      default:          return AppColors.textSecondary;
+      case 'pending':
+        return AppColors.warning;
+      case 'confirmed':
+        return AppColors.primary;
+      case 'inRoute':
+        return Colors.blue;
+      case 'delivered':
+        return AppColors.success;
+      case 'completed':
+        return AppColors.textSecondary;
+      case 'disputed':
+        return AppColors.error;
+      default:
+        return AppColors.textSecondary;
     }
   }
 
   bool _canTrack(String status) =>
-      ['pending', 'confirmed', 'inRoute', 'delivered']
-          .contains(status);
+      ['pending', 'confirmed', 'inRoute', 'delivered'].contains(status);
 
   @override
   Widget build(BuildContext context) {
@@ -98,28 +105,31 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return Column(children: [
       // Filtres
       Container(
-  height: 64,
-  color: Colors.white,
-  child: ListView(
-    scrollDirection: Axis.horizontal,
-    padding: const EdgeInsets.symmetric(
-        horizontal: 16, vertical: 12),
-    children: [
-            _FilterTab(label: 'Toutes',
+        height: 64,
+        color: Colors.white,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          children: [
+            _FilterTab(
+                label: 'Toutes',
                 isSelected: _filter == OrderFilter.toutes,
                 onTap: () => setState(() => _filter = OrderFilter.toutes)),
             const SizedBox(width: 8),
-            _FilterTab(label: 'En cours',
+            _FilterTab(
+                label: 'En cours',
                 isSelected: _filter == OrderFilter.enCours,
                 color: AppColors.warning,
                 onTap: () => setState(() => _filter = OrderFilter.enCours)),
             const SizedBox(width: 8),
-            _FilterTab(label: 'Livré',
+            _FilterTab(
+                label: 'Livré',
                 isSelected: _filter == OrderFilter.livrees,
                 color: AppColors.success,
                 onTap: () => setState(() => _filter = OrderFilter.livrees)),
             const SizedBox(width: 8),
-            _FilterTab(label: 'Terminées',
+            _FilterTab(
+                label: 'Terminées',
                 isSelected: _filter == OrderFilter.terminees,
                 color: AppColors.textSecondary,
                 onTap: () => setState(() => _filter = OrderFilter.terminees)),
@@ -136,16 +146,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
           builder: (context, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
               return const Center(
-                child: CircularProgressIndicator(
-                    color: AppColors.primary),
+                child: CircularProgressIndicator(color: AppColors.primary),
               );
             }
             if (snap.hasError) {
               return Center(
                 child: Text('Erreur : ${snap.error}',
                     style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        color: AppColors.error)),
+                        fontFamily: 'Poppins', color: AppColors.error)),
               );
             }
 
@@ -158,8 +166,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   children: [
                     Icon(Icons.receipt_long_outlined,
                         size: 64,
-                        color: AppColors.textSecondary
-                            .withValues(alpha: 0.3)),
+                        color: AppColors.textSecondary.withValues(alpha: 0.3)),
                     const SizedBox(height: 12),
                     const Text('Aucune commande',
                         style: TextStyle(
@@ -174,24 +181,22 @@ class _OrdersScreenState extends State<OrdersScreen> {
             return ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: orders.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: 10),
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (_, i) {
                 final order = orders[i];
                 final status = order['status'] ?? 'pending';
                 return _OrderCard(
-                  ref: order['ref'] ?? '',
-                  productName: order['productName'] ?? '',
-                  farmName: order['farmName'] ?? '',
-                  total: (order['total'] as num?)?.toDouble() ?? 0,
-                  date: _formatDate(order['createdAt']),
-                  status: _statusLabel(status),
-                  statusColor: _statusColor(status),
-                  canTrack: _canTrack(status),
-                  orderId: order['id']?.toString() ?? '',
-                  formatPrice: _formatPrice,
-                  productPhotoUrl:order['productPhotoUrl']
-                );
+                    ref: order['ref'] ?? '',
+                    productName: order['productName'] ?? '',
+                    farmName: order['farmName'] ?? '',
+                    total: (order['total'] as num?)?.toDouble() ?? 0,
+                    date: _formatDate(order['createdAt']),
+                    status: _statusLabel(status),
+                    statusColor: _statusColor(status),
+                    canTrack: _canTrack(status),
+                    orderId: order['id']?.toString() ?? '',
+                    formatPrice: _formatPrice,
+                    productPhotoUrl: order['productPhotoUrl']);
               },
             );
           },
@@ -211,8 +216,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   String _month(int m) {
-    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin',
-        'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+    const months = [
+      'jan',
+      'fév',
+      'mar',
+      'avr',
+      'mai',
+      'juin',
+      'juil',
+      'août',
+      'sep',
+      'oct',
+      'nov',
+      'déc'
+    ];
     return months[m - 1];
   }
 }
@@ -239,7 +256,8 @@ class _OrderCard extends StatelessWidget {
     required this.statusColor,
     required this.canTrack,
     required this.orderId,
-    required this.formatPrice, this.productPhotoUrl,
+    required this.formatPrice,
+    this.productPhotoUrl,
   });
 
   @override
@@ -263,8 +281,7 @@ class _OrderCard extends StatelessWidget {
                     color: AppColors.textPrimary)),
             const Spacer(),
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
@@ -280,10 +297,10 @@ class _OrderCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(children: [
             ProductImage(
-  imageUrl: productPhotoUrl,
-  width: 48,
-  height: 48,
-),
+              imageUrl: productPhotoUrl,
+              width: 48,
+              height: 48,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -324,16 +341,16 @@ class _OrderCard extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () {
                   debugPrint('orderId: $orderId');
-  if (orderId.isEmpty) {
-    WoilaToast.error(
-        'Erreur', 'Référence de commande introuvable');
-    return;
-  }
-  Get.to(
-    () => OrderTrackingScreen(orderId: orderId),
-    transition: Transition.rightToLeft,
-  );
-},
+                  if (orderId.isEmpty) {
+                    WoilaToast.error(
+                        'Erreur', 'Référence de commande introuvable');
+                    return;
+                  }
+                  Get.to(
+                    () => OrderTrackingScreen(orderId: orderId),
+                    transition: Transition.rightToLeft,
+                  );
+                },
                 icon: const Icon(Icons.location_on_outlined,
                     size: 16, color: AppColors.primary),
                 label: const Text('Suivre la commande',
@@ -349,7 +366,6 @@ class _OrderCard extends StatelessWidget {
     );
   }
 }
-
 
 class _FilterTab extends StatelessWidget {
   final String label;

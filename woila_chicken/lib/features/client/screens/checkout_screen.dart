@@ -85,7 +85,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final orderId = await firestore.createOrder({
         'clientId': auth.uid,
         'clientName': clientName,
-        'clientPhone': _phoneCtrl.text.trim(),
+        'clientPhone': _phoneCtrl.text.trim(), // ← déjà correct
         'farmId': widget.product.farmId,
         'farmName': widget.product.farmName,
         'productId': widget.product.id,
@@ -97,13 +97,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'total': _total,
         'isDelivery': widget.wantsDelivery,
         'address': widget.wantsDelivery
-            ? '${_quartierCtrl.text}, ${_villeCtrl.text}'
+            ? '${_quartierCtrl.text.trim()}, ${_villeCtrl.text.trim()}'
             : '',
+        'indication': _indicationCtrl.text.trim(), // ← ajouté
         'phone': _phoneCtrl.text.trim(),
         'operator': _operator == MobileOperator.orange ? 'orange' : 'mtn',
         'momoNumber': _momoCtrl.text.trim(),
       });
-
       debugPrint('orderId obtenu: $orderId');
 
       // Décrémenter le stock
@@ -170,7 +170,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
                     child: Column(children: [
-                      if (widget.wantsDelivery) _AddressSection(),
+                      if (widget.wantsDelivery)
+                        _AddressSection(
+                          nameCtrl: _nameCtrl,
+                          phoneCtrl: _phoneCtrl,
+                          quartierCtrl: _quartierCtrl,
+                          villeCtrl: _villeCtrl,
+                          indicationCtrl: _indicationCtrl,
+                        ),
                       const SizedBox(height: 16),
                       _PaymentSection(
                         operator: _operator,
@@ -212,7 +219,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(children: [
-                if (widget.wantsDelivery) _AddressSection(),
+                if (widget.wantsDelivery)
+                  _AddressSection(
+                    nameCtrl: _nameCtrl,
+                    phoneCtrl: _phoneCtrl,
+                    quartierCtrl: _quartierCtrl,
+                    villeCtrl: _villeCtrl,
+                    indicationCtrl: _indicationCtrl,
+                  ),
                 const SizedBox(height: 16),
                 _PaymentSection(
                   operator: _operator,
@@ -245,6 +259,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
 // ─── Section adresse ─────────────────────────────────────────────
 class _AddressSection extends StatelessWidget {
+  final TextEditingController nameCtrl;
+  final TextEditingController phoneCtrl;
+  final TextEditingController quartierCtrl;
+  final TextEditingController villeCtrl;
+  final TextEditingController indicationCtrl;
+
+  const _AddressSection({
+    required this.nameCtrl,
+    required this.phoneCtrl,
+    required this.quartierCtrl,
+    required this.villeCtrl,
+    required this.indicationCtrl,
+  });
+
   @override
   Widget build(BuildContext context) {
     return _CheckoutCard(
@@ -252,14 +280,21 @@ class _AddressSection extends StatelessWidget {
       title: 'Adresse de livraison',
       child: Column(children: [
         _CheckoutField(
-            label: 'Nom complet',
-            hint: 'Ex: Amadou Diallo',
-            validator: (v) => v!.isEmpty ? 'Requis' : null),
+          controller: nameCtrl,
+          label: 'Nom complet',
+          hint: 'Ex: Amadou Diallo',
+          validator: (v) => v!.isEmpty ? 'Requis' : null,
+        ),
         const SizedBox(height: 12),
         _CheckoutField(
+          controller: phoneCtrl,
           label: 'Téléphone',
           hint: '+237 6XX XXX XXX',
           keyboardType: TextInputType.phone,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[\+\d\s]')),
+            LengthLimitingTextInputFormatter(13),
+          ],
           validator: (v) {
             if (v == null || v.isEmpty) return 'Numéro requis';
             final digits = v.replaceAll(RegExp(r'[^\d]'), '');
@@ -273,6 +308,7 @@ class _AddressSection extends StatelessWidget {
         Row(children: [
           Expanded(
             child: _CheckoutField(
+              controller: quartierCtrl,
               label: 'Quartier',
               hint: 'Ex: Marché central',
               validator: (v) => v!.isEmpty ? 'Requis' : null,
@@ -281,6 +317,7 @@ class _AddressSection extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: _CheckoutField(
+              controller: villeCtrl,
               label: 'Ville',
               hint: 'Garoua',
               validator: (v) => v!.isEmpty ? 'Requis' : null,
@@ -288,7 +325,8 @@ class _AddressSection extends StatelessWidget {
           ),
         ]),
         const SizedBox(height: 12),
-        const _CheckoutField(
+        _CheckoutField(
+          controller: indicationCtrl,
           label: 'Indication (optionnel)',
           hint: 'Près de la mosquée, couleur de la maison...',
           maxLines: 2,

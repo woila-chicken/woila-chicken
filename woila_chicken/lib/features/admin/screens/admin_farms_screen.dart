@@ -214,8 +214,7 @@ class AdminFarmsScreen extends StatelessWidget {
                               TextStyle(fontFamily: 'Poppins', fontSize: 12)),
                     ),
                   ),
-                ],
-                if (isVerified)
+                ] else if (isVerified && !isSuspended) ...[
                   OutlinedButton.icon(
                     onPressed: () async {
                       await firestore.suspendFarm(farm['id']);
@@ -232,19 +231,23 @@ class AdminFarmsScreen extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: AppColors.error)),
                   ),
-                if (isSuspended)
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      await firestore.verifyFarm(farm['id']);
-                      WoilaToast.success(
-                          'Ferme réactivée', '${farm['name']} a été réactivée');
-                    },
-                    icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: const Text('Réactiver',
-                        style: TextStyle(fontFamily: 'Poppins', fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.success),
+                ] else if (isSuspended) ...[
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        await firestore.verifyFarm(farm['id']);
+                        WoilaToast.success('Ferme réactivée',
+                            '${farm['name']} a été réactivée');
+                      },
+                      icon: const Icon(Icons.refresh_rounded, size: 16),
+                      label: const Text('Réactiver',
+                          style:
+                              TextStyle(fontFamily: 'Poppins', fontSize: 12)),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success),
+                    ),
                   ),
+                ],
               ]),
             ],
           ),
