@@ -13,6 +13,7 @@ class StockController extends GetxController {
 
   final items = <Map<String, dynamic>>[].obs;
   final isLoading = true.obs;
+  final isSuspended = false.obs;
   final farmId = Rx<String?>(null);
   String farmName = '';
   StreamSubscription? _stockSub;
@@ -23,21 +24,35 @@ class StockController extends GetxController {
     _loadFarm();
   }
 
-  Future<void> _loadFarm() async {
-    try {
-      final farm = await _firestore.getFarmByOwner(_auth.uid);
-      if (farm == null) {
-        isLoading.value = false;
-        return;
-      }
-      farmId.value = farm['id'] as String?;
-      farmName = farm['name'] as String? ?? '';
-      _listenStock();
-    } catch (e) {
-      debugPrint('Erreur StockController: $e');
+  void _loadFarm() async {
+  try {
+    final farm = await _firestore.getFarmByOwner(_auth.uid);
+    if (farm == null) {
       isLoading.value = false;
+      return;
     }
+    farmId.value = farm['id'] as String?;
+    farmName = farm['name'] as String? ?? '';
+    isSuspended.value = farm['isSuspended'] as bool? ?? false;
+
+    // Écouter les changements en temps réel
+    FirebaseFirestore.instance
+        .collection('farms')
+        .doc(farmId.value)
+        .snapshots()
+        .listen((snap) {
+      if (snap.exists) {
+        isSuspended.value =
+            snap.data()?['isSuspended'] as bool? ?? false;
+      }
+    });
+
+    _listenStock();
+  } catch (e) {
+    debugPrint('Erreur StockController: $e');
+    isLoading.value = false;
   }
+}
 
   void _listenStock() {
     _stockSub?.cancel();

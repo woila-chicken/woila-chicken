@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../../core/widgets/responsive_layout.dart';
 import '../../../core/widgets/kpi_card.dart';
+import '../../../core/widgets/suspension_banner.dart';
 import 'stock_screen.dart';
 import 'eleveur_orders_screen.dart';
 import 'farm_profile_screen.dart';
@@ -386,54 +387,7 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Bande suspension
-        if (_isSuspended)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: AppColors.error,
-            child: Row(children: [
-              const Icon(Icons.block_rounded, color: Colors.white, size: 18),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Votre compte est suspendu. Vos produits ne sont plus visibles. '
-                  'Contactez l\'admin : woila.chicken.cm@gmail.com',
-                  style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      color: Colors.white,
-                      height: 1.4),
-                ),
-              ),
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: () async {
-                  final uri = Uri.parse('mailto:woila.chicken.cm@gmail.com'
-                      '?subject=Suspension%20de%20compte%20-%20$_farmName'
-                      '&body=Bonjour%2C%0A%0AJe%20souhaite%20contester%20la%20suspension%20de%20ma%20ferme%20%22$_farmName%22.%0A%0ACordialement');
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri);
-                  }
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Contacter',
-                    style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.error),
-                  ),
-                ),
-              ),
-            ]),
-          ),
+        if (_isSuspended) const SuspensionBanner(),
 
         Text(_farmName, style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 4),

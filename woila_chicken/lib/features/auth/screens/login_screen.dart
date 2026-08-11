@@ -34,7 +34,7 @@ class LoginScreen extends StatelessWidget {
                           bottom: 12,
                           right: 16,
                           child: Text(
-                            'version: 1.0.9',
+                            'version: 1.0.10',
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 10,
@@ -113,7 +113,7 @@ class LoginScreen extends StatelessWidget {
             bottom: 12,
             right: 16,
             child: Text(
-              'version: 1.0.9',
+              'version: 1.0.10',
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 10,

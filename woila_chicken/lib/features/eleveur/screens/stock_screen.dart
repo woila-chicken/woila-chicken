@@ -27,6 +27,16 @@ class StockScreen extends StatelessWidget {
       ),
       floatingActionButton: Obx(() {
         if (ctrl.farmId.value == null) return const SizedBox.shrink();
+        if (ctrl.isSuspended.value) {
+          return FloatingActionButton.extended(
+            onPressed: null, // désactivé
+            backgroundColor: AppColors.textSecondary.withOpacity(0.3),
+            icon: const Icon(Icons.block_outlined, color: Colors.white),
+            label: const Text('Compte suspendu',
+                style: TextStyle(
+                    fontFamily: 'Poppins', color: Colors.white, fontSize: 12)),
+          );
+        }
         return FloatingActionButton.extended(
           onPressed: () => _openForm(context, ctrl, null),
           backgroundColor: AppColors.primary,
@@ -236,6 +246,13 @@ class StockScreen extends StatelessWidget {
   // Ouvre le formulaire — panneau latéral sur desktop, page sur mobile
   void _openForm(BuildContext context, StockController ctrl,
       Map<String, dynamic>? existing) {
+    if (ctrl.isSuspended.value) {
+      WoilaToast.error(
+          'Compte suspendu',
+          'Vous ne pouvez pas ajouter de produits. '
+              'Contactez woila.chicken.cm@gmail.com');
+      return;
+    }
     final isDesktop = MediaQuery.of(context).size.width >= 768;
     if (isDesktop) {
       showGeneralDialog(

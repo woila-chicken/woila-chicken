@@ -121,6 +121,18 @@ class FirestoreService extends GetxService {
         .collection('farms')
         .doc(farmId)
         .update({'isVerified': true, 'isSuspended': false});
+
+    // Réactiver tous les produits de la ferme
+    final products = await _db
+        .collection('products')
+        .where('farmId', isEqualTo: farmId)
+        .get();
+
+    final batch = _db.batch();
+    for (final doc in products.docs) {
+      batch.update(doc.reference, {'isActive': true});
+    }
+    await batch.commit();
   }
 
   Future<void> suspendFarm(String farmId) async {
