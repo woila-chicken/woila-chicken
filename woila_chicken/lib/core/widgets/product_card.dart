@@ -40,23 +40,22 @@ class ProductCard extends StatelessWidget {
                   height: 100,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.06),
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(14)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(14)),
                   ),
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(14)),
-                    child: product.imageUrl != null &&
-                            product.imageUrl!.isNotEmpty
-                        ? Image.network(
-                            product.imageUrl!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: 100,
-                            errorBuilder: (_, __, ___) =>
-                                _placeholder(),
-                          )
-                        : _placeholder(),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(14)),
+                    child:
+                        product.imageUrl != null && product.imageUrl!.isNotEmpty
+                            ? Image.network(
+                                product.imageUrl!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: 100,
+                                errorBuilder: (_, __, ___) => _placeholder(),
+                              )
+                            : _placeholder(),
                   ),
                 ),
                 if (product.hasSanitaryCert)
@@ -90,8 +89,8 @@ class ProductCard extends StatelessWidget {
                   top: 8,
                   right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
                       color: product.deliveryAvailable
                           ? AppColors.primary
@@ -138,8 +137,7 @@ class ProductCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(children: [
                     const Icon(Icons.store_outlined,
-                        size: 12,
-                        color: AppColors.textSecondary),
+                        size: 12, color: AppColors.textSecondary),
                     const SizedBox(width: 3),
                     Expanded(
                       child: Text(
@@ -154,15 +152,35 @@ class ProductCard extends StatelessWidget {
                   ]),
                   const SizedBox(height: 2),
                   Row(children: [
-                    const Icon(Icons.star_rounded,
-                        size: 12, color: AppColors.accent),
-                    const SizedBox(width: 2),
+                    Icon(
+                      product.stockQuantity == 0
+                          ? Icons.remove_circle_outline
+                          : product.stockQuantity <= 3
+                              ? Icons.warning_amber_rounded
+                              : Icons.inventory_2_outlined,
+                      size: 12,
+                      color: product.stockQuantity == 0
+                          ? AppColors.error
+                          : product.stockQuantity <= 3
+                              ? AppColors.warning
+                              : AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
                     Text(
-                      product.farmRating.toStringAsFixed(1),
-                      style: const TextStyle(
+                      product.stockQuantity == 0
+                          ? 'Rupture'
+                          : '${product.stockQuantity} en stock',
+                      style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 11,
-                          color: AppColors.textSecondary),
+                          color: product.stockQuantity == 0
+                              ? AppColors.error
+                              : product.stockQuantity <= 3
+                                  ? AppColors.warning
+                                  : AppColors.textSecondary,
+                          fontWeight: product.stockQuantity <= 3
+                              ? FontWeight.w600
+                              : FontWeight.normal),
                     ),
                   ]),
                 ],

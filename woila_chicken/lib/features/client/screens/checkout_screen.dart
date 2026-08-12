@@ -60,6 +60,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadClientInfo();
+  }
+
+  Future<void> _loadClientInfo() async {
+    try {
+      final auth = Get.find<AuthService>();
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(auth.uid)
+          .get();
+      if (!mounted) return;
+      final data = doc.data() ?? {};
+      setState(() {
+        _nameCtrl.text = data['name'] as String? ?? '';
+        _phoneCtrl.text = (data['phone'] as String?)?.isNotEmpty == true
+            ? data['phone'] as String
+            : '+237 ';
+      });
+    } catch (_) {}
+  }
+
   Future<void> _pay() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isProcessing = true);
@@ -69,18 +93,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final firestore = Get.find<FirestoreService>();
 
       // Charger le vrai nom depuis Firestore
-      String clientName = _nameCtrl.text.trim();
-      if (clientName.isEmpty) {
-        try {
-          final userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(auth.uid)
-              .get();
-          clientName = userDoc.data()?['name'] as String? ?? 'Client';
-        } catch (_) {
-          clientName = 'Client';
-        }
-      }
+      final clientName =
+          _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : 'Client';
 
       final orderId = await firestore.createOrder({
         'clientId': auth.uid,
@@ -279,32 +293,21 @@ class _AddressSection extends StatelessWidget {
       icon: Icons.map_outlined,
       title: 'Adresse de livraison',
       child: Column(children: [
-        _CheckoutField(
-          controller: nameCtrl,
+        // Nom — lecture seule
+        _ReadOnlyField(
           label: 'Nom complet',
-          hint: 'Ex: Amadou Diallo',
-          validator: (v) => v!.isEmpty ? 'Requis' : null,
+          controller: nameCtrl,
         ),
         const SizedBox(height: 12),
-        _CheckoutField(
-          controller: phoneCtrl,
+
+        // Téléphone — lecture seule
+        _ReadOnlyField(
           label: 'Téléphone',
-          hint: '+237 6XX XXX XXX',
-          keyboardType: TextInputType.phone,
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[\+\d\s]')),
-            LengthLimitingTextInputFormatter(13),
-          ],
-          validator: (v) {
-            if (v == null || v.isEmpty) return 'Numéro requis';
-            final digits = v.replaceAll(RegExp(r'[^\d]'), '');
-            if (digits.length < 11) {
-              return 'Numéro incomplet (ex: +237 6XX XXX XXX)';
-            }
-            return null;
-          },
+          controller: phoneCtrl,
         ),
         const SizedBox(height: 12),
+
+        // Quartier — modifiable
         Row(children: [
           Expanded(
             child: _CheckoutField(
@@ -325,6 +328,8 @@ class _AddressSection extends StatelessWidget {
           ),
         ]),
         const SizedBox(height: 12),
+
+        // Indication — modifiable
         _CheckoutField(
           controller: indicationCtrl,
           label: 'Indication (optionnel)',
@@ -332,6 +337,59 @@ class _AddressSection extends StatelessWidget {
           maxLines: 2,
         ),
       ]),
+    );
+  }
+}
+
+// Champ lecture seule — grisé
+class _ReadOnlyField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+
+  const _ReadOnlyField({
+    required this.label,
+    required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary)),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          readOnly: true,
+          style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 13,
+              color: AppColors.textSecondary),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: AppColors.background,
+            suffixIcon: const Icon(Icons.lock_outline,
+                size: 16, color: AppColors.textSecondary),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.divider),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.divider),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.divider),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
