@@ -133,7 +133,7 @@ class FirestoreService extends GetxService {
       batch.update(doc.reference, {'isActive': true});
     }
     await batch.commit();
-  }
+  }                                                                                                                                                                                                                                                                                                                                                     
 
   Future<void> suspendFarm(String farmId) async {
     // Suspendre la ferme
