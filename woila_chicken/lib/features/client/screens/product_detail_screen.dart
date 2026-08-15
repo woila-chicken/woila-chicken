@@ -750,7 +750,8 @@ class _RateProductButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.accent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+              border:
+                  Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
             ),
             child: Row(children: [
               const Icon(Icons.star_rounded, color: AppColors.accent, size: 18),
@@ -906,51 +907,76 @@ class _FarmCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Row(children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: const BoxDecoration(
-              color: AppColors.accent, shape: BoxShape.circle),
-          child: const Center(
-            child: Icon(Icons.agriculture_rounded,
-                size: 22, color: Color(0xFF412402)),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('farms')
+          .doc(product.farmId)
+          .snapshots(),
+      builder: (context, snap) {
+        final farmData = snap.hasData && snap.data!.exists
+            ? snap.data!.data() as Map<String, dynamic>
+            : null;
+        final rating = (farmData?['rating'] as num?)?.toDouble() ?? 0;
+        final totalRatings = (farmData?['totalRatings'] as num?)?.toInt() ?? 0;
+        final isVerified = farmData?['isVerified'] as bool? ?? false;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.divider),
           ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(product.farmName,
-                  style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary)),
-              const SizedBox(height: 2),
-              Row(children: [
-                const Icon(Icons.star, size: 14, color: AppColors.accent),
-                const SizedBox(width: 3),
-                Text(
-                  '${product.farmRating} · Ferme partenaire',
-                  style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      color: AppColors.textSecondary),
-                ),
-              ]),
-            ],
-          ),
-        ),
-      ]),
+          child: Row(children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: const BoxDecoration(
+                  color: AppColors.accent, shape: BoxShape.circle),
+              child: const Center(
+                child: Icon(Icons.agriculture_rounded,
+                    size: 22, color: Color(0xFF412402)),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Text(product.farmName,
+                        style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary)),
+                    if (isVerified) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.verified_rounded,
+                          size: 14, color: AppColors.primary),
+                    ],
+                  ]),
+                  const SizedBox(height: 2),
+                  Row(children: [
+                    const Icon(Icons.star_rounded,
+                        size: 14, color: AppColors.accent),
+                    const SizedBox(width: 3),
+                    Text(
+                      rating > 0
+                          ? '${rating.toStringAsFixed(1)} ($totalRatings avis)'
+                          : 'Pas encore noté',
+                      style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          color: AppColors.textSecondary),
+                    ),
+                  ]),
+                ],
+              ),
+            ),
+          ]),
+        );
+      },
     );
   }
 }

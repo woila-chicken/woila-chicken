@@ -444,11 +444,22 @@ class _PaymentSection extends StatelessWidget {
             hint: '+237 6XX XXX XXX',
             controller: momoCtrl,
             keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[\+\d\s]')),
+              LengthLimitingTextInputFormatter(13),
+            ],
             validator: (v) {
-              if (v == null || v.isEmpty) return 'Numéro requis';
+              if (v == null || v.trim().isEmpty) return 'Numéro requis';
               final digits = v.replaceAll(RegExp(r'[^\d]'), '');
               if (digits.length < 11) {
-                return 'Numéro incomplet (ex: +237 6XX XXX XXX)';
+                return 'Numéro incomplet — ex: +237 6XX XXX XXX';
+              }
+              if (!digits.startsWith('237')) {
+                return 'Le numéro doit commencer par +237';
+              }
+              final localPart = digits.substring(3);
+              if (!localPart.startsWith('6') && !localPart.startsWith('2')) {
+                return 'Numéro camerounais invalide';
               }
               return null;
             },
