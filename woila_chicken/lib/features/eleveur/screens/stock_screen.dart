@@ -30,7 +30,7 @@ class StockScreen extends StatelessWidget {
         if (ctrl.isSuspended.value) {
           return FloatingActionButton.extended(
             onPressed: null, // désactivé
-            backgroundColor: AppColors.textSecondary.withOpacity(0.3),
+            backgroundColor: AppColors.textSecondary.withValues(alpha: 0.3),
             icon: const Icon(Icons.block_outlined, color: Colors.white),
             label: const Text('Compte suspendu',
                 style: TextStyle(

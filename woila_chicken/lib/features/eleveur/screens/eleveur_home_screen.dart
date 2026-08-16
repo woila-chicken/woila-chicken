@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/firestore_service.dart';
 import '../../../core/theme/app_theme.dart';
@@ -278,7 +277,6 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
   }
 
   void _loadFarm() {
-    bool _isSuspended = false;
     _firestore.getFarmByOwner(_auth.uid).then((farm) {
       if (farm == null) {
         if (!mounted) return;
@@ -299,7 +297,6 @@ class _EleveurDashboardBodyState extends State<_EleveurDashboardBody> {
         final data = snap.data()!;
         setState(() {
           _rating = (data['rating'] as num?)?.toDouble() ?? 0;
-          _isSuspended = data['isSuspended'] as bool? ?? false;
           _isLoading = false;
         });
       });

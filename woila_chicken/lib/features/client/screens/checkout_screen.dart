@@ -50,6 +50,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       )} FCFA';
 
   @override
+  void initState() {
+    super.initState();
+    _loadClientInfo();
+  }
+
+  @override
   void dispose() {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
@@ -58,12 +64,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _indicationCtrl.dispose();
     _momoCtrl.dispose();
     super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadClientInfo();
   }
 
   Future<void> _loadClientInfo() async {
@@ -92,14 +92,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final auth = Get.find<AuthService>();
       final firestore = Get.find<FirestoreService>();
 
-      // Charger le vrai nom depuis Firestore
       final clientName =
           _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : 'Client';
 
       final orderId = await firestore.createOrder({
         'clientId': auth.uid,
         'clientName': clientName,
-        'clientPhone': _phoneCtrl.text.trim(), // ← déjà correct
+        'clientPhone': _phoneCtrl.text.trim(),
         'farmId': widget.product.farmId,
         'farmName': widget.product.farmName,
         'productId': widget.product.id,
@@ -113,14 +112,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'address': widget.wantsDelivery
             ? '${_quartierCtrl.text.trim()}, ${_villeCtrl.text.trim()}'
             : '',
-        'indication': _indicationCtrl.text.trim(), // ← ajouté
+        'indication': _indicationCtrl.text.trim(),
         'phone': _phoneCtrl.text.trim(),
         'operator': _operator == MobileOperator.orange ? 'orange' : 'mtn',
         'momoNumber': _momoCtrl.text.trim(),
       });
-      debugPrint('orderId obtenu: $orderId');
 
-      // Décrémenter le stock
       try {
         await FirebaseFirestore.instance
             .collection('products')
@@ -129,7 +126,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'quantity': FieldValue.increment(-widget.quantity),
         });
       } catch (e) {
-        debugPrint('Erreur décrémentation stock (non bloquant): $e');
+        debugPrint('Erreur stock: $e');
       }
 
       if (!mounted) return;
@@ -143,7 +140,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             orderRef: orderId,
           ));
     } catch (e) {
-      debugPrint('Erreur _pay: $e');
       if (!mounted) return;
       setState(() => _isProcessing = false);
       WoilaToast.error(
@@ -175,6 +171,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget _buildBody({required bool isDesktop}) {
     return Form(
       key: _formKey,
+      autovalidateMode: AutovalidateMode.disabled,
       child: isDesktop
           ? Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,12 +190,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           indicationCtrl: _indicationCtrl,
                         ),
                       const SizedBox(height: 16),
-                      _PaymentSection(
-                        operator: _operator,
-                        momoCtrl: _momoCtrl,
-                        onOperatorChanged: (op) =>
-                            setState(() => _operator = op),
-                      ),
+                      _buildPaymentSection(),
                     ]),
                   ),
                 ),
@@ -242,11 +234,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     indicationCtrl: _indicationCtrl,
                   ),
                 const SizedBox(height: 16),
-                _PaymentSection(
-                  operator: _operator,
-                  momoCtrl: _momoCtrl,
-                  onOperatorChanged: (op) => setState(() => _operator = op),
-                ),
+                _buildPaymentSection(),
                 const SizedBox(height: 16),
                 _SummarySection(
                   product: widget.product,
@@ -267,6 +255,89 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ]),
             ),
+    );
+  }
+
+  // Section paiement inline dans State pour garder
+  // le TextFormField enregistré dans le Form
+  Widget _buildPaymentSection() {
+    return _CheckoutCard(
+      icon: Icons.phone_android_outlined,
+      title: 'Paiement Mobile Money',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Opérateur
+          Row(children: [
+            Expanded(
+              child: _OperatorCard(
+                label: 'Orange Money',
+                color: const Color(0xFFFF6600),
+                isSelected: _operator == MobileOperator.orange,
+                onTap: () => setState(() => _operator = MobileOperator.orange),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _OperatorCard(
+                label: 'MTN MoMo',
+                color: const Color(0xFFFFCC00),
+                isSelected: _operator == MobileOperator.mtn,
+                onTap: () => setState(() => _operator = MobileOperator.mtn),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 16),
+
+          // Numéro MoMo — dans le State pour rester dans le Form
+          _CheckoutField(
+            label: _operator == MobileOperator.orange
+                ? 'Numéro Orange Money'
+                : 'Numéro MTN MoMo',
+            hint: '+237 6XX XXX XXX',
+            controller: _momoCtrl,
+            keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[\+\d\s]')),
+              LengthLimitingTextInputFormatter(13),
+            ],
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Numéro requis';
+              final digits = v.replaceAll(RegExp(r'[^\d]'), '');
+              if (digits.length < 11) {
+                return 'Numéro incomplet — ex: +237 6XX XXX XXX';
+              }
+              if (!digits.startsWith('237')) {
+                return 'Le numéro doit commencer par +237';
+              }
+              final local = digits.substring(3);
+              if (!local.startsWith('6') && !local.startsWith('2')) {
+                return 'Numéro camerounais invalide';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Instructions
+          const Text('Comment ça marche',
+              style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary)),
+          const SizedBox(height: 10),
+          const _StepRow(
+              num: '1', text: 'Entrez votre numéro et appuyez sur Payer'),
+          const SizedBox(height: 6),
+          const _StepRow(
+              num: '2',
+              text: 'Vous recevrez une notification sur votre téléphone'),
+          const SizedBox(height: 6),
+          const _StepRow(
+              num: '3', text: 'Validez le paiement avec votre code PIN'),
+        ],
+      ),
     );
   }
 }
@@ -293,21 +364,10 @@ class _AddressSection extends StatelessWidget {
       icon: Icons.map_outlined,
       title: 'Adresse de livraison',
       child: Column(children: [
-        // Nom — lecture seule
-        _ReadOnlyField(
-          label: 'Nom complet',
-          controller: nameCtrl,
-        ),
+        _ReadOnlyField(label: 'Nom complet', controller: nameCtrl),
         const SizedBox(height: 12),
-
-        // Téléphone — lecture seule
-        _ReadOnlyField(
-          label: 'Téléphone',
-          controller: phoneCtrl,
-        ),
+        _ReadOnlyField(label: 'Téléphone', controller: phoneCtrl),
         const SizedBox(height: 12),
-
-        // Quartier — modifiable
         Row(children: [
           Expanded(
             child: _CheckoutField(
@@ -328,8 +388,6 @@ class _AddressSection extends StatelessWidget {
           ),
         ]),
         const SizedBox(height: 12),
-
-        // Indication — modifiable
         _CheckoutField(
           controller: indicationCtrl,
           label: 'Indication (optionnel)',
@@ -341,7 +399,7 @@ class _AddressSection extends StatelessWidget {
   }
 }
 
-// Champ lecture seule — grisé
+// ─── Champ lecture seule ──────────────────────────────────────────
 class _ReadOnlyField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
@@ -394,101 +452,7 @@ class _ReadOnlyField extends StatelessWidget {
   }
 }
 
-// ─── Section paiement ─────────────────────────────────────────────
-class _PaymentSection extends StatelessWidget {
-  final MobileOperator operator;
-  final TextEditingController momoCtrl;
-  final ValueChanged<MobileOperator> onOperatorChanged;
-
-  const _PaymentSection({
-    required this.operator,
-    required this.momoCtrl,
-    required this.onOperatorChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _CheckoutCard(
-      icon: Icons.phone_android_outlined,
-      title: 'Paiement Mobile Money',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Choix opérateur
-          Row(children: [
-            Expanded(
-              child: _OperatorCard(
-                label: 'Orange Money',
-                color: const Color(0xFFFF6600),
-                isSelected: operator == MobileOperator.orange,
-                onTap: () => onOperatorChanged(MobileOperator.orange),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _OperatorCard(
-                label: 'MTN MoMo',
-                color: const Color(0xFFFFCC00),
-                isSelected: operator == MobileOperator.mtn,
-                onTap: () => onOperatorChanged(MobileOperator.mtn),
-              ),
-            ),
-          ]),
-          const SizedBox(height: 16),
-
-          // Numéro MoMo
-          _CheckoutField(
-            label: operator == MobileOperator.orange
-                ? 'Numéro Orange Money'
-                : 'Numéro MTN MoMo',
-            hint: '+237 6XX XXX XXX',
-            controller: momoCtrl,
-            keyboardType: TextInputType.phone,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[\+\d\s]')),
-              LengthLimitingTextInputFormatter(13),
-            ],
-            validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Numéro requis';
-              final digits = v.replaceAll(RegExp(r'[^\d]'), '');
-              if (digits.length < 11) {
-                return 'Numéro incomplet — ex: +237 6XX XXX XXX';
-              }
-              if (!digits.startsWith('237')) {
-                return 'Le numéro doit commencer par +237';
-              }
-              final localPart = digits.substring(3);
-              if (!localPart.startsWith('6') && !localPart.startsWith('2')) {
-                return 'Numéro camerounais invalide';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Étapes
-          const Text('Comment ça marche',
-              style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary)),
-          const SizedBox(height: 10),
-          const _StepRow(
-              num: '1', text: 'Entrez votre numéro et appuyez sur Payer'),
-          const SizedBox(height: 6),
-          const _StepRow(
-              num: '2',
-              text: 'Vous recevrez une notification sur votre téléphone'),
-          const SizedBox(height: 6),
-          const _StepRow(
-              num: '3', text: 'Validez le paiement avec votre code PIN'),
-        ],
-      ),
-    );
-  }
-}
-
+// ─── Opérateur ────────────────────────────────────────────────────
 class _OperatorCard extends StatelessWidget {
   final String label;
   final Color color;
@@ -539,6 +503,7 @@ class _OperatorCard extends StatelessWidget {
   }
 }
 
+// ─── Étape ────────────────────────────────────────────────────────
 class _StepRow extends StatelessWidget {
   final String num;
   final String text;
@@ -578,7 +543,7 @@ class _StepRow extends StatelessWidget {
   }
 }
 
-// ─── Section récapitulatif ────────────────────────────────────────
+// ─── Récapitulatif ────────────────────────────────────────────────
 class _SummarySection extends StatelessWidget {
   final Product product;
   final int quantity;
@@ -644,11 +609,13 @@ class _SummaryRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-                color: AppColors.textSecondary)),
+        Expanded(
+          child: Text(label,
+              style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  color: AppColors.textSecondary)),
+        ),
         Text(value,
             style: const TextStyle(
                 fontFamily: 'Poppins',
@@ -677,7 +644,9 @@ class _EscrowBadge extends StatelessWidget {
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Paiement sécurisé — votre argent est libéré à l\'éleveur uniquement après votre confirmation de réception.',
+              'Paiement sécurisé — votre argent est libéré '
+              'à l\'éleveur uniquement après votre confirmation '
+              'de réception.',
               style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 11,
@@ -737,7 +706,7 @@ class _PayButton extends StatelessWidget {
   }
 }
 
-// ─── Card conteneur générique ─────────────────────────────────────
+// ─── Card conteneur ───────────────────────────────────────────────
 class _CheckoutCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -779,7 +748,7 @@ class _CheckoutCard extends StatelessWidget {
   }
 }
 
-// ─── Champ formulaire réutilisable ────────────────────────────────
+// ─── Champ formulaire ─────────────────────────────────────────────
 class _CheckoutField extends StatelessWidget {
   final String label;
   final String hint;

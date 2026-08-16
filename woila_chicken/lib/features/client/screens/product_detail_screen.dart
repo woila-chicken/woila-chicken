@@ -21,7 +21,6 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  bool _wantsDelivery = true;
   bool _isFavorite = false;
   bool _loadingFavorite = true;
 
@@ -30,8 +29,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
-    if (!widget.product.deliveryAvailable) _wantsDelivery = false;
-    _checkFavorite();
+    if (!widget.product.deliveryAvailable) {
+      _checkFavorite();
+    }
   }
 
   Future<void> _checkFavorite() async {
